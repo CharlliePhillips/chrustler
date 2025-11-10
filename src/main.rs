@@ -160,7 +160,7 @@ fn main() {
     // using an alternate address: https://docs.rs/ssd1306/latest/ssd1306/struct.I2CDisplayInterface.html
 
     let i2c = rppal::i2c::I2c::new().expect("failed to open I2C bus!");
-    let interface = I2CDisplayInterface::new(i2c);
+    let interface = I2CDisplayInterface::new_custom_address(i2c, 0x3C);
     let mut display = Ssd1306::new(
         interface,
         DisplaySize128x64,
