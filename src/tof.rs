@@ -78,27 +78,34 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
     }
 }
 
-fn set_filter(filter: FilterType, strength: i8, cur_eq3: &AtomicU16) {
+fn set_filter(filter: FilterType, strength: i8, _cur_eq3: &AtomicU16) {
     match filter {
         FilterType::LPF => {
-            set_eq(1, strength/3);
-            set_eq(2, strength/2);
+            set_eq(1, strength);
+            if strength < 12 {
+                set_eq(2, strength/2);
+            } else {
+                set_eq(5, strength);
+            }
         },
         FilterType::HPF => {
-            set_eq(4, strength/3);
-            set_eq(5, strength/2);
-
+            set_eq(4, strength);
+            if strength < 12 {
+                set_eq(5, strength/2);
+            } else {
+                set_eq(5, strength);
+            }
         }
     }
 
-    cur_eq3.fetch_update(std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst, |cur_strength| {
-        if cur_strength > (strength) as u16 {
-            Some(strength as u16)
-        } else {
-            Some(cur_strength)
-        }
-    }).expect("failed to set eq3 strength");
+    // cur_eq3.fetch_update(std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst, |cur_strength| {
+    //     if cur_strength > (strength) as u16 {
+    //         Some(strength as u16)
+    //     } else {
+    //         Some(cur_strength)
+    //     }
+    // }).expect("failed to set eq3 strength");
 
-    let eq3: i8 = cur_eq3.load(std::sync::atomic::Ordering::SeqCst).try_into().unwrap(); 
-    set_eq(3, eq3);
+    // let eq3: i8 = cur_eq3.load(std::sync::atomic::Ordering::SeqCst).try_into().unwrap(); 
+    // set_eq(3, eq3);
 }
