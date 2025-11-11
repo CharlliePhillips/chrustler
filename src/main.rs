@@ -420,7 +420,7 @@ fn main() {
                 } else {
                     major = true;
                 }
-                
+
                 sleep(Duration::from_millis(500));
             },
 
@@ -662,7 +662,7 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     let oct_text = match octave {
         Octave::LOW => format!("Oct:Low"),
         Octave::MID => format!("Oct:Mid"),
-        Octave::HIGH => format!("Oct:High")
+        Octave::HIGH => format!("Oct:Hi")
     };
     
     let vol_text: String = format!("Vol:{:#?}", volume);
