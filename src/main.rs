@@ -6,7 +6,7 @@ use std::{env, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, t
 use std::fs::File;
 use std::io;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
+    mono_font::{MonoTextStyleBuilder, ascii::{FONT_6X10, FONT_8X13}},
     pixelcolor::BinaryColor,
     prelude::*,
     text::{Baseline, Text},
@@ -632,15 +632,15 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
 
 fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, key: Key, major: bool, octave: Octave, volume: i64, hpf: u16, lpf: u16, chord_type: u16, gate: bool) {
     let text_style = MonoTextStyleBuilder::new()
-        .font(&FONT_6X10)
+        .font(&FONT_8X13)
         .text_color(BinaryColor::On)
         .build();
 
     let key_text: String = format!("Key: {:#?}", key); 
-    let mode_text: String = if (major) {
-        format!("Mode: maj")
+    let mode_text: String = if major {
+        format!("Md: maj")
     } else {
-        format!("Mode: min")
+        format!("Md: min")
     };
     let oct_text = match octave {
         Octave::LOW => format!("Oct: Low"),
@@ -669,25 +669,25 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     Text::with_baseline(&key_text, Point::new(2, 2), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&mode_text, Point::new(2, 10), text_style, Baseline::Top)
+    Text::with_baseline(&mode_text, Point::new(2, 16), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&oct_text, Point::new(2, 18), text_style, Baseline::Top)
+    Text::with_baseline(&oct_text, Point::new(2, 30), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&vol_text, Point::new(2, 26), text_style, Baseline::Top)
+    Text::with_baseline(&vol_text, Point::new(2, 44), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&hpf_text, Point::new(66, 2), text_style, Baseline::Top)
+    Text::with_baseline(&hpf_text, Point::new(60, 2), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&lpf_text, Point::new(66, 10), text_style, Baseline::Top)
+    Text::with_baseline(&lpf_text, Point::new(60, 16), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&chord_text, Point::new(66, 18), text_style, Baseline::Top)
+    Text::with_baseline(&chord_text, Point::new(60,30), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&gate_text, Point::new(66, 26), text_style, Baseline::Top)
+    Text::with_baseline(&gate_text, Point::new(60, 44), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
 
