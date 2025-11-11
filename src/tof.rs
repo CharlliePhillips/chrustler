@@ -52,10 +52,10 @@ pub fn init_tof() -> Vl53l1x {
 
 pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIRight, cur_eq3: &AtomicU16, enabled: &Arc<AtomicBool>) {
     if enabled.load(std::sync::atomic::Ordering::SeqCst) {
-        println!("TOF interrupt");
+        //println!("TOF interrupt");
         let mut sensor = tof_sensor.lock().expect("failed to acquire sensor lock");
         let sample = sensor.read_sample().expect("failed to get right sample");
-        println!("sampled: {}mm ({:#?})", sample.distance, sample.status);
+        //println!("sampled: {}mm ({:#?})", sample.distance, sample.status);
         match sample.status {
             Vl53l1xRangeStatus::Ok => {
                 let filter_strength: i8 = if sample.distance < 300 {
@@ -66,11 +66,11 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
                 if cur_roi.load(std::sync::atomic::Ordering::SeqCst) {
                     set_filter(FilterType::LPF, filter_strength, cur_eq3);
                     cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
-                    sensor.set_user_roi(0, 0, 7, 15).expect("failed to set ROI Left during interrupt");
+                    sensor.set_user_roi(0, 15, 4, 0).expect("failed to set ROI Left during interrupt");
                 } else {
                     set_filter(FilterType::HPF, filter_strength, cur_eq3);
                     cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
-                    sensor.set_user_roi(0, 0, 7, 15).expect("failed to set ROI Right during interrupt");
+                    sensor.set_user_roi(11, 15, 15, 0).expect("failed to set ROI Right during interrupt");
                 }
             }
             _ => {}
