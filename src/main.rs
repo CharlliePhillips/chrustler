@@ -1,4 +1,5 @@
 use awedio::{backends::CpalBufferSize, manager::Manager, sounds::{MemorySound, wrappers::{AdjustableSpeed, Controllable, Controller, Pausable, Stoppable}}, *};
+use nix::libc::major;
 use pitch_detection::{detector::{mcleod::McLeodDetector, PitchDetector}, *};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
 use std::{env, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::Duration};
@@ -83,7 +84,7 @@ impl Chords {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Key {
     C,
     Cs,
@@ -251,38 +252,6 @@ fn main() {
         // init current notes vector
     change_octave_key(sound.clone(), pitch.frequency, &mut sound_cache, key, current_octave);
 
-    // let two: f64 = 2.0;
-    // let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((correction) as f32).stoppable().controllable();
-    // sound_cache.push(base); 
-    // let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((2 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(second); 
-    // let mut third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((4 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(third); 
-    // let mut fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((5 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(fourth); 
-    // let mut fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((7 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(fifth); 
-    // let mut sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((9 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(sixth); 
-    // let mut seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((11 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(seventh); 
-    // let mut base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * correction) as f32).stoppable().controllable();
-    // sound_cache.push(base_oct);
-    // let mut second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((2 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(second_oct); 
-    // let mut third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((4 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(third_oct); 
-    // let mut fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((5 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(fourth_oct); 
-    // let mut fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((7 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(fifth_oct); 
-    // let mut sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((9 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(sixth_oct); 
-    // let mut seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((11 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(seventh_oct);
-    // let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of(((4 as f64) * correction) as f32).stoppable().controllable();
-    // sound_cache.push(base_oct2);
-
     let mut current_notes: 
         Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>> 
         = Vec::new();
@@ -292,7 +261,7 @@ fn main() {
     let mut last_input: Option<keypad::Keypad> = None;
     loop {
         // if volume - previous encoder value is different from current encoder value
-        
+        update_display(&mut display, key, major, current_octave, 50, 50, 50, chord_type, gate);
         // match keypad input
         match keypad::get_keypad(&mut ex_gpio, last_input) {
             // ZERO - Play root note
@@ -627,6 +596,7 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
     };
 
     let two: f64 = 2.0;
+
     let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((correction) as f32).stoppable().controllable();
     sound_cache.push(base); 
     let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((2 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
@@ -658,4 +628,68 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
     let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of(((4 as f64) * correction) as f32).stoppable().controllable();
     sound_cache.push(base_oct2); 
 
+}
+
+fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, key: Key, major: bool, octave: Octave, volume: i64, hpf: u16, lpf: u16, chord_type: u16, gate: bool) {
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_6X10)
+        .text_color(BinaryColor::On)
+        .build();
+
+    let key_text: String = format!("Key: {:#?}", key); 
+    let mode_text: String = if (major) {
+        format!("Mode: maj")
+    } else {
+        format!("Mode: min")
+    };
+    let oct_text = match octave {
+        Octave::LOW => format!("Oct: Low"),
+        Octave::MID => format!("Oct: Mid"),
+        Octave::HIGH => format!("Oct: High")
+    };
+    
+    let vol_text: String = format!("Vol: {:#?}", volume);
+    let hpf_text: String = format!("HPF: {:#?}", hpf); 
+    let lpf_text: String = format!("LPF: {:#?}", lpf);
+    
+    let chord_text: String = match chord_type {
+        TRIADS => format!("Type: Tri"),
+        SEVENTHS => format!("Type: 7th"),
+        NINTHS=> format!("Type: 9th"),
+        _ => format!("Type: Tri"),
+    };
+
+    let gate_text: String = if gate {
+        format!("Gate: ON")
+    } else {
+        format!("Gate: OFF")
+    };
+
+    display.clear_buffer(); 
+    Text::with_baseline(&key_text, Point::new(2, 2), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&mode_text, Point::new(2, 10), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&oct_text, Point::new(2, 18), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&vol_text, Point::new(2, 26), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&hpf_text, Point::new(66, 2), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&lpf_text, Point::new(66, 10), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&chord_text, Point::new(66, 18), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+    Text::with_baseline(&gate_text, Point::new(66, 26), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+
+    display.flush().unwrap(); 
 }
