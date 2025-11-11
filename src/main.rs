@@ -274,9 +274,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::I, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::I, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::i, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::i, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::ONE);
@@ -287,9 +287,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::ii, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::ii, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::iid, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::iid, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::TWO);
@@ -300,9 +300,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::III, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::III, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::iii, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::iii, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::THREE);
@@ -313,9 +313,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::IV, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::IV, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::iv, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::iv, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::FOUR);
@@ -326,9 +326,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::V, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::V, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::v, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::v, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::FIVE);
@@ -339,9 +339,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::VI, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::VI, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::vi, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::vi, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::SIX);
@@ -351,9 +351,9 @@ fn main() {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::VII, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::VII, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
-                        play_chord(&mut manager, sound.clone(), correction, Chords::vii, chord_type, major, &mut sound_cache, &mut current_notes);
+                        play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::vii, chord_type, major, &mut sound_cache, &mut current_notes);
                     }
                 }
                 last_input = Some(keypad::Keypad::SEVEN);
@@ -420,6 +420,7 @@ fn main() {
                 } else {
                     major = true;
                 }
+                
                 sleep(Duration::from_millis(500));
             },
 
@@ -483,8 +484,19 @@ fn main() {
     }    
 }
 
-fn play_chord(manager: &mut Manager, sound: MemorySound, correction: f64, chord: Chords, chord_type: u16, major: bool,/*octave,*/ cache: &mut Vec<SoundTup>, curr: &mut Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>>) {
+fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octave, freq: f64, chord: Chords, chord_type: u16, major: bool, cache: &mut Vec<SoundTup>, curr: &mut Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>>) {
     //let mut curr: Vec<SoundTup> = Vec::new();
+    let correction = match octave {
+        Octave::LOW => {
+            (key.frequency()/2.0) / (freq as f64)
+        }
+        Octave::MID => {
+            (key.frequency()) / (freq as f64)
+        }
+        Octave::HIGH => {
+            (key.frequency() * 2.0) / (freq as f64)
+        }
+    };
     for i in 0..chord_type {
         let idx: usize = chord.note_indices()[i as usize] as usize;
         let (play_snd, ctrl_snd) = cache.remove(idx as usize);
