@@ -309,7 +309,7 @@ fn main() {
             },
             // FOUR - IV chord/ iv chord
             Some(keypad::Keypad::FOUR) => {
-                if last_input != Some(keypad::Keypad::THREE) {
+                if last_input != Some(keypad::Keypad::FOUR) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
@@ -322,7 +322,7 @@ fn main() {
             },
             // FIVE - V chord/ v chord
             Some(keypad::Keypad::FIVE) => {
-                if last_input != Some(keypad::Keypad::THREE) {
+                if last_input != Some(keypad::Keypad::FIVE) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
@@ -332,11 +332,10 @@ fn main() {
                     }
                 }
                 last_input = Some(keypad::Keypad::FIVE);
-
             },
             // SIX - vi Chord/  VI chord
             Some(keypad::Keypad::SIX) => {
-                if last_input != Some(keypad::Keypad::THREE) {
+                if last_input != Some(keypad::Keypad::SIX) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
@@ -348,7 +347,7 @@ fn main() {
                 last_input = Some(keypad::Keypad::SIX);
             },
            Some(keypad::Keypad::SEVEN)=> {
-                if last_input != Some(keypad::Keypad::THREE) {
+                if last_input != Some(keypad::Keypad::SEVEN) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
                     if (major) {
@@ -384,11 +383,12 @@ fn main() {
                     Octave::MID => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::LOW);
                         current_octave = Octave::LOW;
+                        sleep(Duration::from_millis(500));
                     }
                     Octave::HIGH => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID);
                         current_octave = Octave::MID;
-
+                        sleep(Duration::from_millis(500));
                     }
                 }
             },
@@ -399,14 +399,16 @@ fn main() {
                     Octave::LOW => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID);
                         current_octave = Octave::MID;
-
+                        sleep(Duration::from_millis(500));
                     }
                     Octave::MID => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::HIGH);
                         current_octave = Octave::HIGH;
+                        sleep(Duration::from_millis(500));
                     }
                     Octave::HIGH => {}
                 }
+
             },
 
             // Below - only accept these inputs if current input == None
@@ -418,6 +420,7 @@ fn main() {
                 } else {
                     major = true;
                 }
+                sleep(Duration::from_millis(500));
             },
 
             // B - Gate On/Off
@@ -428,7 +431,7 @@ fn main() {
                 } else {
                     gate = true;
                 }
-
+                sleep(Duration::from_millis(500));
             },
             // C - TOF/Filter On/Off
             Some(keypad::Keypad::C) => {
@@ -438,6 +441,7 @@ fn main() {
                 } else {
                     tof_enabled.store(true, std::sync::atomic::Ordering::SeqCst);
                 }
+                sleep(Duration::from_millis(500));
             },
             // D - Toggle Triads 7ths or 9ths
             Some(keypad::Keypad::D) => {
@@ -457,6 +461,7 @@ fn main() {
                         chord_type = TRIADS;
                     }
                 }
+                sleep(Duration::from_millis(500));
             },
             // STAR - Record sample
             Some(keypad::Keypad::STAR) => {
@@ -636,33 +641,33 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
         .text_color(BinaryColor::On)
         .build();
 
-    let key_text: String = format!("Key: {:#?}", key); 
+    let key_text: String = format!("Key:{:#?}", key); 
     let mode_text: String = if major {
-        format!("Md: maj")
+        format!("Md:maj")
     } else {
-        format!("Md: min")
+        format!("Md:min")
     };
     let oct_text = match octave {
-        Octave::LOW => format!("Oct: Low"),
-        Octave::MID => format!("Oct: Mid"),
-        Octave::HIGH => format!("Oct: High")
+        Octave::LOW => format!("Oct:Low"),
+        Octave::MID => format!("Oct:Mid"),
+        Octave::HIGH => format!("Oct:High")
     };
     
-    let vol_text: String = format!("Vol: {:#?}", volume);
-    let hpf_text: String = format!("HPF: {:#?}", hpf); 
-    let lpf_text: String = format!("LPF: {:#?}", lpf);
+    let vol_text: String = format!("Vol:{:#?}", volume);
+    let hpf_text: String = format!("HPF:{:#?}", hpf); 
+    let lpf_text: String = format!("LPF:{:#?}", lpf);
     
     let chord_text: String = match chord_type {
-        TRIADS => format!("Type: Tri"),
-        SEVENTHS => format!("Type: 7th"),
-        NINTHS=> format!("Type: 9th"),
-        _ => format!("Type: Tri"),
+        TRIADS => format!("Type:Tri"),
+        SEVENTHS => format!("Type:7th"),
+        NINTHS=> format!("Type:9th"),
+        _ => format!("Type:Tri"),
     };
 
     let gate_text: String = if gate {
-        format!("Gate: ON")
+        format!("Gate:ON")
     } else {
-        format!("Gate: OFF")
+        format!("Gate:OFF")
     };
 
     display.clear_buffer(); 
