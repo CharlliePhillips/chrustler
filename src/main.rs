@@ -509,10 +509,10 @@ fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octav
         curr.push(ctrl_snd);
 
         if major {
-            let new_snd: SoundTup =  sound.clone().with_adjustable_speed_of((MAJ_MUL[idx] * correction) as f32).stoppable().controllable();
+            let new_snd: SoundTup =  sound.clone().with_adjustable_speed_of((MAJ_MUL[idx - 1] * correction) as f32).stoppable().controllable();
             cache.insert(idx - 1, new_snd);
         } else {
-            let new_snd =  sound.clone().with_adjustable_speed_of((MIN_MUL[idx] * correction) as f32).stoppable().controllable();
+            let new_snd =  sound.clone().with_adjustable_speed_of((MIN_MUL[idx - 1] * correction) as f32).stoppable().controllable();
             cache.insert(idx - 1, new_snd);
         }
     }
