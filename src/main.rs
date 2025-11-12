@@ -520,10 +520,8 @@ fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octav
 
 fn gate_sound(chord_type: u16, curr: &mut Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>>) {
     for i in  0..chord_type {
-        if (i as usize) < curr.len() {
-            let mut stop_snd = curr.remove(i as usize);
+            let mut stop_snd = curr.remove(0);
             stop_snd.set_stopped();
-        }
     }
 }
 
