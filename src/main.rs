@@ -504,7 +504,7 @@ fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octav
     };
     for i in 0..chord_type {
         let idx: usize = chord.note_indices()[i as usize] as usize;
-        let (play_snd, ctrl_snd) = cache.remove(idx as usize);
+        let (play_snd, ctrl_snd) = cache.remove((idx - 1) as usize);
         manager.play(Box::new(play_snd));
         curr.push(ctrl_snd);
 
