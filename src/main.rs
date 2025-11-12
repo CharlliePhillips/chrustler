@@ -2,6 +2,7 @@ use awedio::{backends::CpalBufferSize, manager::Manager, sounds::{MemorySound, w
 use nix::libc::major;
 use pitch_detection::{detector::{mcleod::McLeodDetector, PitchDetector}, *};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
+use core::num;
 use std::{env, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::Duration};
 use std::fs::File;
 use std::io;
@@ -102,6 +103,8 @@ enum Key {
     B
 }
 
+const KEYS: [Key; 12] = [Key::C, Key::Cs, Key::D, Key::Ds, Key::E, Key::F, Key::Fs, Key::G, Key::Gs, Key::A, Key::As, Key::B];
+
 impl Key {
     fn frequency(self) -> f64 {
         match (self) {
@@ -154,6 +157,14 @@ enum Octave {
 type SoundTup = (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>);
 fn main() {
     // Setup
+    let mut volume: i64 = 100;
+    let vol_string = format!("{}%", volume);
+    let vol = vol_string.as_str();
+    let _amix = std::process::Command::new("amixer")
+        .args(vec!["-c", "1", "cset", "numid=6", vol])
+        .spawn().expect("Failed to launch amixer!");
+            
+
     let gpio = Gpio::new().expect("failed to init gpio");
     let i2c = rppal::i2c::I2c::new().expect("failed to open I2C bus!");
     let mut ex_gpio = MCP23017::new(i2c, 0x27).expect("failed to initialize GPIO expander");
@@ -200,7 +211,8 @@ fn main() {
    
     let mut enc_b_DT = gpio.get(encoders::ENC_B_DT).expect("couldn't get GPIO").into_input();
     let mut enc_b_CLK= gpio.get(encoders::ENC_B_CLK).expect("couldn't get GPIO").into_input();
-    
+    let mut last_counter_a: i64 = 0;
+    let mut last_counter_b: i64 = 0;
     let counter_a = Arc::new(AtomicI64::new(0));
     let counter_b = Arc::new(AtomicI64::new(0));
     let counter_a_int = counter_a.clone();
@@ -243,8 +255,9 @@ fn main() {
         .get_pitch(&samples, SAMPLE_RATE, POWER_THRESHOLD, CLARITY_THRESHOLD)
         .unwrap();
     let mut current_freq: f64 = pitch.frequency;
-    let key =  Key::C;
-    let correction: f64 = key.frequency() / (current_freq as f64);
+    let mut key =  Key::C;
+    let mut key_idx = 0;
+    //let correction: f64 = key.frequency() / (current_freq as f64);
     let mut major = true;
     let mut chord_type = TRIADS;
         // init scale and mode to C major
@@ -416,6 +429,7 @@ fn main() {
                         sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                 }
+                last_input = Some(keypad::Keypad::EIGHT);
             },
             
             Some(keypad::Keypad::NINE) => {
@@ -433,7 +447,7 @@ fn main() {
                     }
                     Octave::HIGH => {}
                 }
-
+                last_input = Some(keypad::Keypad::NINE);
             },
 
             // Below - only accept these inputs if current input == None
@@ -447,6 +461,7 @@ fn main() {
                 }
                 change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
                 sleep(Duration::from_millis(INPUT_TIMEOUT));
+                last_input = Some(keypad::Keypad::A);
             },
 
             // B - Gate On/Off
@@ -458,6 +473,7 @@ fn main() {
                     gate = true;
                 }
                 sleep(Duration::from_millis(INPUT_TIMEOUT));
+                last_input = Some(keypad::Keypad::B);
             },
             // C - TOF/Filter On/Off
             Some(keypad::Keypad::C) => {
@@ -470,6 +486,7 @@ fn main() {
                     println!("TOF enabled");
                 }
                 sleep(Duration::from_millis(INPUT_TIMEOUT));
+                last_input = Some(keypad::Keypad::C);
             },
             // D - Toggle Triads 7ths or 9ths
             Some(keypad::Keypad::D) => {
@@ -490,6 +507,7 @@ fn main() {
                     }
                 }
                 sleep(Duration::from_millis(INPUT_TIMEOUT));
+                last_input = Some(keypad::Keypad::D);
             },
             // STAR - Record sample
             Some(keypad::Keypad::STAR) => {
@@ -498,20 +516,69 @@ fn main() {
                 tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
                 // TODO: recording routine
                 tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
-
+                last_input = Some(keypad::Keypad::STAR);
             },
         }
 
         update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
-        if (last_input == None) {
-            // if volume - previous encoder value is different from current encoder value
+        
+        
+        // if volume - previous encoder value is different from current encoder value
+        let cur_counter_a = counter_a.load(std::sync::atomic::Ordering::SeqCst);
+        if cur_counter_a != last_counter_a {
+            let vol_diff: i64 = cur_counter_a - last_counter_a;
+            let new_vol = volume + vol_diff;
             
+            volume = if new_vol > 100 {
+                100
+            } else if new_vol < 0 {
+                0
+            } else {
+                new_vol
+            };
+
+            let pre_rec_tof = tof_enabled.load(std::sync::atomic::Ordering::SeqCst);
+            tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
+           
+            let vol_string = format!("{}%", volume);
+            let vol = vol_string.as_str();
+            let _amix = std::process::Command::new("amixer")
+                .args(vec!["-c", "1", "cset", "numid=6", vol])
+                .spawn().expect("Failed to launch amixer!");
+            
+            tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
+            fullscreen_msg(&mut display, format!("Volume: {}%", volume));
+        } else {
+            update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+        }
+        last_counter_a = cur_counter_a;
+        
+        let cur_counter_b = counter_b.load(std::sync::atomic::Ordering::SeqCst);
+        if last_input == None {
+                       
             // if audio output change - volume encoder push button
 
             // if root note change - previous encoder value is different from current 
+            if cur_counter_b != last_counter_b {
+                let key_diff: i64 = cur_counter_b - last_counter_b;
+                let new_idx: i64= key_idx + key_diff;
+            
+                key_idx = if new_idx > 11 {
+                    11
+                } else if new_idx < 0 {
+                    0
+                } else {
+                    new_idx
+                };
+
+                key = KEYS[key_idx as usize];
+                change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
+                update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+            }
 
             // if file select toggle - enter sample select mode if in playback
         }
+        last_counter_b = cur_counter_b;
     }    
 }
 
@@ -771,4 +838,20 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
         .unwrap();
 
     display.flush().unwrap(); 
+}
+
+fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, text: String) {
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_8X13)
+        .text_color(BinaryColor::On)
+        .build();
+
+    display.clear_buffer(); 
+
+    Text::with_baseline(&text, Point::new(32, 2), text_style, Baseline::Top)
+        .draw(display)
+        .unwrap();
+
+    display.flush().unwrap(); 
+
 }
