@@ -63,7 +63,7 @@ pub fn get_keypad(ex_gpio: &mut MCP23017<I2c>, last_input: Option<Keypad>) -> Op
         sleep(Duration::from_millis(10));
         for col in 4..8 {
             if ex_gpio.digital_read(col + 8).expect("failed to read GPIO") {
-                println!("row {}, col {}", row, col);
+                //println!("row {}, col {}", row, col);
                 out = get_keycode(row, col);
                 if (out == last_input) {
                     return out;

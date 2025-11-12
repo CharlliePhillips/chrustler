@@ -45,6 +45,8 @@ const NINTHS: u16 = 5;
 const MAJ_MUL: [f64; 15] = [1.0, 1.1225, 1.2599, 1.3348, 1.4983, 1.6818, 1.887, 2.0, 2.2449, 2.5198, 2.6697, 2.9966, 3.3636, 3.7755, 4.0];
 const MIN_MUL: [f64; 15] = [1.0, 1.1225, 1.1892, 1.3348, 1.4983, 1.5874, 1.7818, 2.0, 2.2449, 2.3784, 2.6697, 2.9966, 3.1748, 3.5636, 4.0];
 
+const INPUT_TIMEOUT: u64 = 150;
+
 #[derive(Clone, Copy)]
 enum Chords {
     I,
@@ -264,7 +266,7 @@ fn main() {
     let mut last_input: Option<keypad::Keypad> = None;
     loop {
         // if volume - previous encoder value is different from current encoder value
-        update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+        
         // match keypad input
         match keypad::get_keypad(&mut ex_gpio, last_input) {
             // ZERO - Play root note
@@ -386,12 +388,12 @@ fn main() {
                     Octave::MID => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::LOW);
                         current_octave = Octave::LOW;
-                        sleep(Duration::from_millis(500));
+                        sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                     Octave::HIGH => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID);
                         current_octave = Octave::MID;
-                        sleep(Duration::from_millis(500));
+                        sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                 }
             },
@@ -402,12 +404,12 @@ fn main() {
                     Octave::LOW => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID);
                         current_octave = Octave::MID;
-                        sleep(Duration::from_millis(500));
+                        sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                     Octave::MID => {
                         change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::HIGH);
                         current_octave = Octave::HIGH;
-                        sleep(Duration::from_millis(500));
+                        sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                     Octave::HIGH => {}
                 }
@@ -424,7 +426,7 @@ fn main() {
                     major = true;
                 }
 
-                sleep(Duration::from_millis(500));
+                sleep(Duration::from_millis(INPUT_TIMEOUT));
             },
 
             // B - Gate On/Off
@@ -435,7 +437,7 @@ fn main() {
                 } else {
                     gate = true;
                 }
-                sleep(Duration::from_millis(500));
+                sleep(Duration::from_millis(INPUT_TIMEOUT));
             },
             // C - TOF/Filter On/Off
             Some(keypad::Keypad::C) => {
@@ -447,7 +449,7 @@ fn main() {
                     tof_enabled.store(true, std::sync::atomic::Ordering::SeqCst);
                     println!("TOF enabled");
                 }
-                sleep(Duration::from_millis(500));
+                sleep(Duration::from_millis(INPUT_TIMEOUT));
             },
             // D - Toggle Triads 7ths or 9ths
             Some(keypad::Keypad::D) => {
@@ -467,7 +469,7 @@ fn main() {
                         chord_type = TRIADS;
                     }
                 }
-                sleep(Duration::from_millis(500));
+                sleep(Duration::from_millis(INPUT_TIMEOUT));
             },
             // STAR - Record sample
             Some(keypad::Keypad::STAR) => {
@@ -480,6 +482,7 @@ fn main() {
             },
         }
 
+        update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
         // if audio output change - volume encoder push button
 
         // if root note change - previous encoder value is different from current 
