@@ -255,7 +255,7 @@ fn main() {
         Vec<SoundTup> 
         = Vec::new();
         // init current notes vector
-    change_octave_key(sound.clone(), pitch.frequency, &mut sound_cache, key, current_octave);
+    change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
 
     let mut current_notes: 
         Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>> 
@@ -386,12 +386,12 @@ fn main() {
                 match current_octave {
                     Octave::LOW => {}
                     Octave::MID => {
-                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::LOW);
+                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::LOW, major);
                         current_octave = Octave::LOW;
                         sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                     Octave::HIGH => {
-                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID);
+                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID, major);
                         current_octave = Octave::MID;
                         sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
@@ -402,12 +402,12 @@ fn main() {
                 gate_sound(chord_type, &mut current_notes);
                 match current_octave {
                     Octave::LOW => {
-                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID);
+                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::MID, major);
                         current_octave = Octave::MID;
                         sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
                     Octave::MID => {
-                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::HIGH);
+                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, Octave::HIGH, major);
                         current_octave = Octave::HIGH;
                         sleep(Duration::from_millis(INPUT_TIMEOUT));
                     }
@@ -425,7 +425,7 @@ fn main() {
                 } else {
                     major = true;
                 }
-
+                change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
                 sleep(Duration::from_millis(INPUT_TIMEOUT));
             },
 
@@ -604,7 +604,7 @@ fn sample_select(/*scale, mode*/) {
 // 
 // }
 
-fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundTup>, key: Key, octave: Octave) {
+fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundTup>, key: Key, octave: Octave, major: bool) {
     for i in 0..sound_cache.len() {
         sound_cache.remove(0);
     }
@@ -621,37 +621,69 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
     };
 
     let two: f64 = 2.0;
-
-    let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((correction) as f32).stoppable().controllable();
-    sound_cache.push(base); 
-    let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((2 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(second); 
-    let mut third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((4 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(third); 
-    let mut fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((5 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(fourth); 
-    let mut fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((7 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(fifth); 
-    let mut sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((9 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(sixth); 
-    let mut seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two.pow((11 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(seventh); 
-    let mut base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * correction) as f32).stoppable().controllable();
-    sound_cache.push(base_oct);
-    let mut second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((2 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(second_oct); 
-    let mut third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((4 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(third_oct); 
-    let mut fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((5 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(fourth_oct); 
-    let mut fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((7 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(fifth_oct); 
-    let mut sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((9 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(sixth_oct); 
-    let mut seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((two * two.pow((11 as f64)/(12 as f64)) * correction) as f32).stoppable().controllable();
-    sound_cache.push(seventh_oct);
-    let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of(((4 as f64) * correction) as f32).stoppable().controllable();
-    sound_cache.push(base_oct2); 
+    if major {
+        let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[0] * correction) as f32).stoppable().controllable();
+        sound_cache.push(base); 
+        let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[1] * correction) as f32).stoppable().controllable();
+        sound_cache.push(second); 
+        let mut third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[2] * correction) as f32).stoppable().controllable();
+        sound_cache.push(third); 
+        let mut fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[3] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fourth); 
+        let mut fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[4] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fifth); 
+        let mut sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[5] * correction) as f32).stoppable().controllable();
+        sound_cache.push(sixth); 
+        let mut seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[6] * correction) as f32).stoppable().controllable();
+        sound_cache.push(seventh); 
+        let mut base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[7] * correction) as f32).stoppable().controllable();
+        sound_cache.push(base_oct);
+        let mut second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[8] * correction) as f32).stoppable().controllable();
+        sound_cache.push(second_oct); 
+        let mut third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[9] * correction) as f32).stoppable().controllable();
+        sound_cache.push(third_oct); 
+        let mut fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[10] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fourth_oct); 
+        let mut fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[11] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fifth_oct); 
+        let mut sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[12] * correction) as f32).stoppable().controllable();
+        sound_cache.push(sixth_oct); 
+        let mut seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[13] * correction) as f32).stoppable().controllable();
+        sound_cache.push(seventh_oct);
+        let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[14] * correction) as f32).stoppable().controllable();
+        sound_cache.push(base_oct2); 
+    } else {
+        let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[0] * correction) as f32).stoppable().controllable();
+        sound_cache.push(base); 
+        let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[1] * correction) as f32).stoppable().controllable();
+        sound_cache.push(second); 
+        let mut third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[2] * correction) as f32).stoppable().controllable();
+        sound_cache.push(third); 
+        let mut fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[3] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fourth); 
+        let mut fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[4] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fifth); 
+        let mut sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[5] * correction) as f32).stoppable().controllable();
+        sound_cache.push(sixth); 
+        let mut seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[6] * correction) as f32).stoppable().controllable();
+        sound_cache.push(seventh); 
+        let mut base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[7] * correction) as f32).stoppable().controllable();
+        sound_cache.push(base_oct);
+        let mut second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[8] * correction) as f32).stoppable().controllable();
+        sound_cache.push(second_oct); 
+        let mut third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[9] * correction) as f32).stoppable().controllable();
+        sound_cache.push(third_oct); 
+        let mut fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[10] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fourth_oct); 
+        let mut fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[11] * correction) as f32).stoppable().controllable();
+        sound_cache.push(fifth_oct); 
+        let mut sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[12] * correction) as f32).stoppable().controllable();
+        sound_cache.push(sixth_oct); 
+        let mut seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[13] * correction) as f32).stoppable().controllable();
+        sound_cache.push(seventh_oct);
+        let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[14] * correction) as f32).stoppable().controllable();
+        sound_cache.push(base_oct2); 
+    }
 
 }
 
