@@ -34,14 +34,14 @@ pub fn init_keypad(i2c: I2c) -> Option<MCP23017<I2c>> {
     let _ = ex_gpio.pin_mode(9, mcp23017::PinMode::OUTPUT).expect("failed to init ouput gpio");
     let _ = ex_gpio.pin_mode(10, mcp23017::PinMode::OUTPUT).expect("failed to init ouput gpio");
     let _ = ex_gpio.pin_mode(11, mcp23017::PinMode::OUTPUT).expect("failed to init ouput gpio");
-    // ex_gpio.digital_write(8, true);
-    // ex_gpio.digital_write(9, true);
-    // ex_gpio.digital_write(10, true);
-    // ex_gpio.digital_write(11, true);
-    ex_gpio.digital_write(8, false);
-    ex_gpio.digital_write(9, false);
-    ex_gpio.digital_write(10, false);
-    ex_gpio.digital_write(11, false);
+    ex_gpio.digital_write(8, true);
+    ex_gpio.digital_write(9, true);
+    ex_gpio.digital_write(10, true);
+    ex_gpio.digital_write(11, true);
+    // ex_gpio.digital_write(8, false);
+    // ex_gpio.digital_write(9, false);
+    // ex_gpio.digital_write(10, false);
+    // ex_gpio.digital_write(11, false);
     
     let _ = ex_gpio.pin_mode(12, mcp23017::PinMode::INPUT).expect("failed to init input gpio");
     let _ = ex_gpio.pin_mode(13, mcp23017::PinMode::INPUT).expect("failed to init input gpio");
@@ -63,7 +63,7 @@ pub fn init_keypad(i2c: I2c) -> Option<MCP23017<I2c>> {
 pub fn get_keypad(ex_gpio: &mut MCP23017<I2c>, last_input: Option<Keypad>) -> Option<Keypad>{
     let mut out = None;
     for row in 0..4 {
-        //let _ = ex_gpio.digital_write(row + 8, false);
+        let _ = ex_gpio.digital_write(row + 8, false);
         sleep(Duration::from_millis(1));
         for col in 4..8 {
             if ex_gpio.digital_read(col + 8).unwrap_or(false) {
@@ -74,7 +74,7 @@ pub fn get_keypad(ex_gpio: &mut MCP23017<I2c>, last_input: Option<Keypad>) -> Op
                 }
             }
         }
-        //let _ = ex_gpio.digital_write(row + 8, true);
+        let _ = ex_gpio.digital_write(row + 8, true);
     }
     out
 }
