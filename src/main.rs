@@ -265,13 +265,33 @@ fn main() {
     let mut gate = false;
     let mut last_input: Option<keypad::Keypad> = None;
     loop {
-        // if volume - previous encoder value is different from current encoder value
         
         // match keypad input
         match keypad::get_keypad(&mut ex_gpio, last_input) {
             // ZERO - Play root note
             Some(keypad::Keypad::ZERO) => {
+                let correction = match current_octave{
+                    Octave::LOW => {
+                        (key.frequency()/2.0) / (current_freq as f64)
+                    }
+                    Octave::MID => {
+                        (key.frequency()) / (current_freq as f64)
+                    }
+                    Octave::HIGH => {
+                        (key.frequency() * 2.0) / (current_freq as f64)
+                    }
+                };
+                    let (play_snd, ctrl_snd) = sound_cache.remove((0) as usize);
+                    manager.play(Box::new(play_snd));
+                    current_notes.push(ctrl_snd);
 
+                    if major {
+                        let new_snd: SoundTup =  sound.clone().with_adjustable_speed_of((MAJ_MUL[0] * correction) as f32).stoppable().controllable();
+                        sound_cache.insert(0, new_snd);
+                    } else {
+                        let new_snd =  sound.clone().with_adjustable_speed_of((MIN_MUL[0] * correction) as f32).stoppable().controllable();
+                        sound_cache.insert(0, new_snd);
+                    }
             },
             // ONE - I chord for major/ i chord minor
             Some(keypad::Keypad::ONE) => {
@@ -483,17 +503,19 @@ fn main() {
         }
 
         update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
-        // if audio output change - volume encoder push button
+        if (last_input == None) {
+            // if volume - previous encoder value is different from current encoder value
+            
+            // if audio output change - volume encoder push button
 
-        // if root note change - previous encoder value is different from current 
+            // if root note change - previous encoder value is different from current 
 
-        // if file select toggle - enter sample select mode if in playback
-
+            // if file select toggle - enter sample select mode if in playback
+        }
     }    
 }
 
 fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octave, freq: f64, chord: Chords, chord_type: u16, major: bool, cache: &mut Vec<SoundTup>, curr: &mut Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>>) {
-    //let mut curr: Vec<SoundTup> = Vec::new();
     let correction = match octave {
         Octave::LOW => {
             (key.frequency()/2.0) / (freq as f64)
