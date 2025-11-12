@@ -439,8 +439,10 @@ fn main() {
                 gate_sound(chord_type, &mut current_notes);
                 if tof_enabled.load(std::sync::atomic::Ordering::SeqCst) {
                     tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
+                    println!("TOF disabled");
                 } else {
                     tof_enabled.store(true, std::sync::atomic::Ordering::SeqCst);
+                    println!("TOF enabled");
                 }
                 sleep(Duration::from_millis(500));
             },
