@@ -87,7 +87,7 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
             } else {
                 set_eq(2, strength);
             }
-            cur_lpf.store((12 - strength) as u16, std::sync::atomic::Ordering::SeqCst);
+            cur_lpf.store(strength as u16, std::sync::atomic::Ordering::SeqCst);
         },
         FilterType::HPF => {
             set_eq(4, strength);
@@ -96,7 +96,7 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
             } else {
                 set_eq(5, strength);
             }
-            cur_hpf.store((12 - strength) as u16, std::sync::atomic::Ordering::SeqCst);
+            cur_hpf.store(strength as u16, std::sync::atomic::Ordering::SeqCst);
         }
     }
 

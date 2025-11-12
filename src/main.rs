@@ -510,10 +510,10 @@ fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octav
 
         if major {
             let new_snd: SoundTup =  sound.clone().with_adjustable_speed_of((MAJ_MUL[idx] * correction) as f32).stoppable().controllable();
-            cache.insert(idx, new_snd);
+            cache.insert(idx - 1, new_snd);
         } else {
             let new_snd =  sound.clone().with_adjustable_speed_of((MIN_MUL[idx] * correction) as f32).stoppable().controllable();
-            cache.insert(idx, new_snd);
+            cache.insert(idx - 1, new_snd);
         }
     }
 }
@@ -671,20 +671,20 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     };
     
     let vol_text: String = format!("Vol:{:#?}", volume);
-    let hpf_text: String = format!("HPF:{:#?}", hpf); 
-    let lpf_text: String = format!("LPF:{:#?}", lpf);
+    let hpf_text: String = format!("HF:{:#?}", hpf); 
+    let lpf_text: String = format!("LF:{:#?}", lpf);
     
     let chord_text: String = match chord_type {
-        TRIADS => format!("Type:Tri"),
-        SEVENTHS => format!("Type:7th"),
-        NINTHS=> format!("Type:9th"),
-        _ => format!("Type:Tri"),
+        TRIADS => format!("Typ:Tri"),
+        SEVENTHS => format!("Typ:7th"),
+        NINTHS=> format!("Typ:9th"),
+        _ => format!("Typ:Tri"),
     };
 
     let gate_text: String = if gate {
-        format!("Gate:ON")
+        format!("Gat:ON")
     } else {
-        format!("Gate:OFF")
+        format!("Gat:OFF")
     };
 
     display.clear_buffer(); 
@@ -700,16 +700,16 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     Text::with_baseline(&vol_text, Point::new(2, 44), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&hpf_text, Point::new(60, 2), text_style, Baseline::Top)
+    Text::with_baseline(&hpf_text, Point::new(64, 2), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&lpf_text, Point::new(60, 16), text_style, Baseline::Top)
+    Text::with_baseline(&lpf_text, Point::new(64, 16), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&chord_text, Point::new(60,30), text_style, Baseline::Top)
+    Text::with_baseline(&chord_text, Point::new(64,30), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&gate_text, Point::new(60, 44), text_style, Baseline::Top)
+    Text::with_baseline(&gate_text, Point::new(64, 44), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
 
