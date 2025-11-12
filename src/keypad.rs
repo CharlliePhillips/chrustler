@@ -24,6 +24,8 @@ pub enum Keypad {
     D,
     POUND,
     STAR,
+    VOL,
+    KEY,
 }
 
 pub fn init_keypad(i2c: I2c) -> Option<MCP23017<I2c>> {

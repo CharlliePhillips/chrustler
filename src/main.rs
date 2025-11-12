@@ -47,6 +47,7 @@ const MAJ_MUL: [f64; 15] = [1.0, 1.1225, 1.2599, 1.3348, 1.4983, 1.6818, 1.887, 
 const MIN_MUL: [f64; 15] = [1.0, 1.1225, 1.1892, 1.3348, 1.4983, 1.5874, 1.7818, 2.0, 2.2449, 2.3784, 2.6697, 2.9966, 3.1748, 3.5636, 4.0];
 
 const INPUT_TIMEOUT: u64 = 150;
+const FULLSCREEN_TIMEOUT: u64 = 500;
 
 #[derive(Clone, Copy)]
 enum Chords {
@@ -518,9 +519,12 @@ fn main() {
                 tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
                 last_input = Some(keypad::Keypad::STAR);
             },
+
+            // To keep rust compiler happy, this accounts for Volume or Key change
+            _ => {}
         }
 
-        update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+        //update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
         
         
         // if volume - previous encoder value is different from current encoder value
@@ -548,8 +552,10 @@ fn main() {
             
             tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
             fullscreen_msg(&mut display, format!("Volume: {}%", volume));
+            sleep(Duration::from_millis(FULLSCREEN_TIMEOUT));
+            last_input = Some(keypad::Keypad::VOL);
         } else {
-            update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+            update_display(&mut display, key, major, current_octave, tof_enabled.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
         }
         last_counter_a = cur_counter_a;
         
@@ -560,6 +566,7 @@ fn main() {
 
             // if root note change - previous encoder value is different from current 
             if cur_counter_b != last_counter_b {
+                gate_sound(chord_type, &mut current_notes);
                 let key_diff: i64 = cur_counter_b - last_counter_b;
                 let new_idx: i64= key_idx + key_diff;
             
@@ -573,7 +580,8 @@ fn main() {
 
                 key = KEYS[key_idx as usize];
                 change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
-                update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+                update_display(&mut display, key, major, current_octave, tof_enabled.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+                last_input = Some(keypad::Keypad::KEY);
             }
 
             // if file select toggle - enter sample select mode if in playback
@@ -776,7 +784,7 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
 
 }
 
-fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, key: Key, major: bool, octave: Octave, volume: i64, hpf: u16, lpf: u16, chord_type: u16, gate: bool) {
+fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, key: Key, major: bool, octave: Octave, tof: bool, hpf: u16, lpf: u16, chord_type: u16, gate: bool) {
     let text_style = MonoTextStyleBuilder::new()
         .font(&FONT_8X13)
         .text_color(BinaryColor::On)
@@ -793,17 +801,22 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
         Octave::MID => format!("Oct:Mid"),
         Octave::HIGH => format!("Oct:Hi")
     };
-    
-    let vol_text: String = format!("Vol:{:#?}", volume);
-    let hpf_text: String = format!("HF:{:#?}", hpf); 
-    let lpf_text: String = format!("LF:{:#?}", lpf);
-    
+
     let chord_text: String = match chord_type {
         TRIADS => format!("Typ:Tri"),
         SEVENTHS => format!("Typ:7th"),
         NINTHS=> format!("Typ:9th"),
         _ => format!("Typ:Tri"),
+    };   
+
+    let tof_text: String = if tof {
+        format!("TOF:On")
+    } else {
+        format!("TOF:Off")
     };
+
+    let hpf_text: String = format!("HF:{:#?}", hpf); 
+    let lpf_text: String = format!("LF:{:#?}", lpf);
 
     let gate_text: String = if gate {
         format!("Gat:ON")
@@ -821,7 +834,7 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     Text::with_baseline(&oct_text, Point::new(2, 30), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&vol_text, Point::new(2, 44), text_style, Baseline::Top)
+    Text::with_baseline(&chord_text, Point::new(2, 44), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
     Text::with_baseline(&hpf_text, Point::new(64, 2), text_style, Baseline::Top)
@@ -830,7 +843,7 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     Text::with_baseline(&lpf_text, Point::new(64, 16), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
-    Text::with_baseline(&chord_text, Point::new(64,30), text_style, Baseline::Top)
+    Text::with_baseline(&tof_text, Point::new(64,30), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
     Text::with_baseline(&gate_text, Point::new(64, 44), text_style, Baseline::Top)
