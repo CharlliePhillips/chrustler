@@ -50,7 +50,7 @@ pub fn init_tof() -> Vl53l1x {
     return tof_sensor;
 }
 
-pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIRight, cur_eq3: &AtomicU16, enabled: &Arc<AtomicBool>) {
+pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIRight, cur_hpf: Arc<AtomicU16>, cur_lpf: Arc<AtomicU16>, enabled: &Arc<AtomicBool>) {
     //println!("TOF interrupt");
     let mut sensor = tof_sensor.lock().expect("failed to acquire sensor lock");
     let sample = sensor.read_sample().expect("failed to get right sample");
@@ -64,12 +64,12 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
                     12
                 };
                 if cur_roi.load(std::sync::atomic::Ordering::SeqCst) {
-                    set_filter(FilterType::LPF, filter_strength, cur_eq3);
+                    set_filter(FilterType::LPF, filter_strength, cur_hpf, cur_lpf);
                     cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
                     sensor.set_user_roi(0, 15, 4, 0).expect("failed to set ROI Left during interrupt");
                 } else {
-                    set_filter(FilterType::HPF, filter_strength, cur_eq3);
-                    cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
+                    set_filter(FilterType::HPF, filter_strength, cur_hpf, cur_lpf);
+                    cur_roi.store(true, std::sync::atomic::Ordering::SeqCst);
                     sensor.set_user_roi(11, 15, 15, 0).expect("failed to set ROI Right during interrupt");
                 }
             }
@@ -78,7 +78,7 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
     }
 }
 
-fn set_filter(filter: FilterType, strength: i8, _cur_eq3: &AtomicU16) {
+fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf: Arc<AtomicU16>) {
     match filter {
         FilterType::LPF => {
             set_eq(1, strength);
@@ -87,6 +87,7 @@ fn set_filter(filter: FilterType, strength: i8, _cur_eq3: &AtomicU16) {
             } else {
                 set_eq(2, strength);
             }
+            cur_lpf.store((12 - strength) as u16, std::sync::atomic::Ordering::SeqCst);
         },
         FilterType::HPF => {
             set_eq(4, strength);
@@ -95,6 +96,7 @@ fn set_filter(filter: FilterType, strength: i8, _cur_eq3: &AtomicU16) {
             } else {
                 set_eq(5, strength);
             }
+            cur_hpf.store((12 - strength) as u16, std::sync::atomic::Ordering::SeqCst);
         }
     }
 

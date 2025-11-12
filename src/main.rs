@@ -182,9 +182,12 @@ fn main() {
     let thr_sens = tof_sensor.clone();
     let main_thr_sens = tof_sensor.clone();
     let cur_roi: tof::ROIRight = tof::ROIRight::new(true);
-    let cur_eq3: AtomicU16 = AtomicU16::new(DEFAULT_EQ_LEVEL);
+    let cur_lpf: Arc<AtomicU16> = Arc::new(AtomicU16::new(DEFAULT_EQ_LEVEL));
+    let cur_hpf: Arc<AtomicU16> = Arc::new(AtomicU16::new(DEFAULT_EQ_LEVEL));
+    let pass_lpf = cur_lpf.clone();
+    let pass_hpf = cur_hpf.clone();
     let mut tof_int_pin = gpio.get(TOF_INT_PIN).expect("failed to get tof interrupt pin").into_input();
-    tof_int_pin.set_async_interrupt(Trigger::FallingEdge, None, move |e| tof::tof_eq_int(e, thr_sens.clone(), &cur_roi, &cur_eq3, &pass_enabled)).expect("failed to setup TOF interrupt");
+    tof_int_pin.set_async_interrupt(Trigger::FallingEdge, None, move |e| tof::tof_eq_int(e, thr_sens.clone(), &cur_roi, pass_hpf.clone(), pass_lpf.clone(), &pass_enabled)).expect("failed to setup TOF interrupt");
     let mut sensor = main_thr_sens.lock().expect("failed to lock sensor to begin ranging");
     sensor.start_ranging(vl53l1x::DistanceMode::Short).expect("failed to begin tof ranging");
     drop(sensor);
@@ -261,7 +264,7 @@ fn main() {
     let mut last_input: Option<keypad::Keypad> = None;
     loop {
         // if volume - previous encoder value is different from current encoder value
-        update_display(&mut display, key, major, current_octave, 50, 50, 50, chord_type, gate);
+        update_display(&mut display, key, major, current_octave, 50, cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
         // match keypad input
         match keypad::get_keypad(&mut ex_gpio, last_input) {
             // ZERO - Play root note
