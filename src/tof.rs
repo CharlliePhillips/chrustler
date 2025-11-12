@@ -85,7 +85,7 @@ fn set_filter(filter: FilterType, strength: i8, _cur_eq3: &AtomicU16) {
             if strength < 12 {
                 set_eq(2, strength/2);
             } else {
-                set_eq(5, strength);
+                set_eq(2, strength);
             }
         },
         FilterType::HPF => {
