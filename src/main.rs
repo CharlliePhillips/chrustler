@@ -631,6 +631,7 @@ fn main() {
 
             // if file select toggle - enter sample select mode if in playback
             if enc_b_pb.is_low() {
+                gate_sound(chord_type, &mut current_notes);
                 match sample_select(&sample_paths, &mut current_sample_idx, &enc_b_pb, counter_b.clone(), &mut cur_counter_b, &mut display) {
                     Some((new_sound, new_freq)) => {
                         current_freq = new_freq;
