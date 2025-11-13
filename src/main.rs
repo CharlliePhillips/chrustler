@@ -47,7 +47,7 @@ const MAJ_MUL: [f64; 15] = [1.0, 1.1225, 1.2599, 1.3348, 1.4983, 1.6818, 1.887, 
 const MIN_MUL: [f64; 15] = [1.0, 1.1225, 1.1892, 1.3348, 1.4983, 1.5874, 1.7818, 2.0, 2.2449, 2.3784, 2.6697, 2.9966, 3.1748, 3.5636, 4.0];
 
 const INPUT_TIMEOUT: u64 = 150;
-const FULLSCREEN_TIMEOUT: u64 = 25;
+const FULLSCREEN_TIMEOUT: u64 = 75;
 
 #[derive(Clone, Copy)]
 enum Chords {
