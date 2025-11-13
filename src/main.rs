@@ -692,7 +692,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
     fullscreen_msg(display, "Sample Select".to_string());
     sleep(Duration::from_millis(1000));
 
-    let cur_smpl = sample_paths[*current_smpl_idx].clone();
+    let mut cur_smpl = sample_paths[*current_smpl_idx].clone();
     let mut name_begin = cur_smpl.rfind("/").unwrap_or(0);
     if name_begin > 0 {
         name_begin += 1;
@@ -723,7 +723,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
             };
         }
         
-        let cur_smpl = sample_paths[*current_smpl_idx].clone();
+        cur_smpl = sample_paths[*current_smpl_idx].clone();
         let mut name_begin = cur_smpl.rfind("/").unwrap_or(0);
         if name_begin > 0 {
             name_begin += 1;
