@@ -635,6 +635,7 @@ fn main() {
                     Some((new_sound, new_freq)) => {
                         current_freq = new_freq;
                         sound = new_sound;
+                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
                     }
                     None => {}
                 }
@@ -1016,7 +1017,7 @@ fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
 
     display.clear_buffer(); 
 
-    let x: i32 = 128 - (((text.len() as i32) * 8) / 2);
+    let x: i32 = 64 - (((text.len() as i32) * 8) / 2);
     Text::with_baseline(&text, Point::new(x, 26), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
