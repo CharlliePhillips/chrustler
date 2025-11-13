@@ -157,6 +157,9 @@ enum Octave {
 }
 type SoundTup = (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>);
 fn main() {
+    println!("default host_id: {:#?}", cpal::platform::default_host().id());
+
+
     // Setup
     let mut volume: i64 = 75;
     let vol_string = format!("{}%", VOL_LUT[volume as usize]);
@@ -836,8 +839,11 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
 //     // give countdown
 //     // record sample
 //     // detect frequency
-    drop(backend);
+    println!("default host_id: {:#?}", cpal::platform::default_host().id());
+    
     drop(manager);
+    drop(backend);
+    //manager = backends::CpalBackend::new(1, 48000, CpalBufferSize::Default, cpal::platform::, sample_format)
 
     let sample_name = format!("sound_{}.wav", next_smpl_no);
     let rec_path = format!("{}/{}", media_path, sample_name);
@@ -970,7 +976,6 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
     let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
 
-    
     (backend, manager, Some((out_sound, out_freq)))
 }
 
