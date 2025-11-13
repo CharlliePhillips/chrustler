@@ -844,7 +844,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     fullscreen_msg(display, "Recording in 1".to_string());
     sleep(Duration::from_secs(1));
  
-    let mut arec= match std::process::Command::new("arecord")
+    let arec= match std::process::Command::new("arecord")
         .args(vec!["-D", "plughw:1,0", "-f", "S16_LE", "-c", "1", "-r", "48000", rec_path.as_str()])
         .spawn() {
             Ok(arec) => arec,
@@ -861,20 +861,20 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     // Sample up to 10 minutes!
     let max_rec_time = Duration::from_secs(600); 
     loop {
-        match arec.try_wait() {
-            Ok(complete) => {
-                match complete {
-                    Some(_status) => break,
-                    None => {}
-                }
-            }
-            Err(_) => {
-                fullscreen_msg(display, "System error!".to_string());
-                sleep(Duration::from_secs(1));
-                return None
+        // match arec.try_wait() {
+        //     Ok(complete) => {
+        //         match complete {
+        //             Some(_status) => break,
+        //             None => {}
+        //         }
+        //     }
+        //     Err(_) => {
+        //         fullscreen_msg(display, "System error!".to_string());
+        //         sleep(Duration::from_secs(1));
+        //         return None
 
-            }
-        }
+        //     }
+        // }
 
         if keypad::get_keypad(ex_gpio, None) == Some(keypad::Keypad::STAR) || rec_start_time.elapsed() > max_rec_time {
             match nix::sys::signal::kill(nix::unistd::Pid::from_raw(arec.id() as i32), nix::sys::signal::Signal::SIGINT) {
