@@ -714,7 +714,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
             let enc_diff: i64 = *cur_enc_cnt - last_enc_cnt;
             let new_idx: i64 = (*current_smpl_idx as i64) + enc_diff;
             
-            *current_smpl_idx = if (new_idx as usize) >= sample_paths.len() {
+            *current_smpl_idx = if new_idx >= (sample_paths.len() as i64) {
                 0
             } else if new_idx < 0 {
                 sample_paths.len() - 1
