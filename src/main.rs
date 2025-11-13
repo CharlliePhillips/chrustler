@@ -551,7 +551,7 @@ fn main() {
                 .spawn().expect("Failed to launch amixer!");
             
             tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
-            fullscreen_msg(&mut display, format!("Volume: {}%", volume));
+            fullscreen_msg(&mut display, format!("Volume: {}%", (100.0 * (volume as f32 / 75.0)).round() as u16));
             sleep(Duration::from_millis(FULLSCREEN_TIMEOUT));
             last_input = Some(keypad::Keypad::VOL);
         } else {
