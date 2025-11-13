@@ -706,7 +706,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
     fullscreen_msg(display, trunc_smpl_string);
     sleep(Duration::from_millis(500));
     
-    let last_enc_cnt = *cur_enc_cnt;
+    let mut last_enc_cnt = *cur_enc_cnt;
     loop {
         *cur_enc_cnt = enc_cnt.load(std::sync::atomic::Ordering::SeqCst);
 
@@ -740,6 +740,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
         if enc_pb.is_low() {
             break;
         }
+        last_enc_cnt = *cur_enc_cnt;
     }
     let wav_sound = match awedio::sounds::open_file(cur_smpl) {
         Ok(sound) => sound,
