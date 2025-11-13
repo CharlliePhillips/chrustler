@@ -37,7 +37,7 @@ const TEMP_PIN: u8 = 27;
 const TOF_INT_PIN: u8 = 17;
 
 const DEFAULT_EQ_LEVEL: u16 = 12;
-
+const VOL_LUT: [u16; 76] = [0,5,9,13,17,20,24,26,29,32,34,37,39,41,43,45,47,48,50,52,53,55,56,58,59,60,61,63,64,65,66,67,68,70,71,72,73,74,75,75,76,77,78,79,80,81,81,82,83,84,85,85,86,87,87,88,89,89,90,91,91,92,93,93,94,94,95,96,96,97,97,98,98,99,99,100];
 
 const TRIADS: u16 = 3;
 const SEVENTHS: u16 = 4;
@@ -47,7 +47,7 @@ const MAJ_MUL: [f64; 15] = [1.0, 1.1225, 1.2599, 1.3348, 1.4983, 1.6818, 1.887, 
 const MIN_MUL: [f64; 15] = [1.0, 1.1225, 1.1892, 1.3348, 1.4983, 1.5874, 1.7818, 2.0, 2.2449, 2.3784, 2.6697, 2.9966, 3.1748, 3.5636, 4.0];
 
 const INPUT_TIMEOUT: u64 = 150;
-const FULLSCREEN_TIMEOUT: u64 = 500;
+const FULLSCREEN_TIMEOUT: u64 = 25;
 
 #[derive(Clone, Copy)]
 enum Chords {
@@ -108,7 +108,7 @@ const KEYS: [Key; 12] = [Key::C, Key::Cs, Key::D, Key::Ds, Key::E, Key::F, Key::
 
 impl Key {
     fn frequency(self) -> f64 {
-        match (self) {
+        match self {
             Key::C => {
                 261.63
             }
@@ -158,8 +158,8 @@ enum Octave {
 type SoundTup = (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>);
 fn main() {
     // Setup
-    let mut volume: i64 = 100;
-    let vol_string = format!("{}%", volume);
+    let mut volume: i64 = 75;
+    let vol_string = format!("{}%", VOL_LUT[volume as usize]);
     let vol = vol_string.as_str();
     let _amix = std::process::Command::new("amixer")
         .args(vec!["-c", "1", "cset", "numid=6", vol])
@@ -533,8 +533,8 @@ fn main() {
             let vol_diff: i64 = cur_counter_a - last_counter_a;
             let new_vol = volume + vol_diff;
             
-            volume = if new_vol > 100 {
-                100
+            volume = if new_vol > 75 {
+                75
             } else if new_vol < 0 {
                 0
             } else {
@@ -544,10 +544,10 @@ fn main() {
             let pre_rec_tof = tof_enabled.load(std::sync::atomic::Ordering::SeqCst);
             tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
            
-            let vol_string = format!("{}%", volume);
+            let vol_string = format!("{}%", VOL_LUT[volume as usize]);
             let vol = vol_string.as_str();
             let _amix = std::process::Command::new("amixer")
-                .args(vec!["-c", "1", "cset", "numid=6", vol])
+                .args(vec!["-q", "-c", "1", "cset", "numid=6", vol])
                 .spawn().expect("Failed to launch amixer!");
             
             tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
@@ -861,7 +861,7 @@ fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
 
     display.clear_buffer(); 
 
-    Text::with_baseline(&text, Point::new(32, 2), text_style, Baseline::Top)
+    Text::with_baseline(&text, Point::new(2, 26), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
 
