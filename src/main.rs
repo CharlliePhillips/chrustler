@@ -1,4 +1,4 @@
-use awedio::{backends::CpalBufferSize, manager::Manager, sounds::{MemorySound, wrappers::{AdjustableSpeed, Controllable, Controller, Pausable, Stoppable}}, *};
+use awedio::{backends::{CpalBackend, CpalBufferSize}, manager::Manager, sounds::{MemorySound, wrappers::{AdjustableSpeed, Controllable, Controller, Pausable, Stoppable}}, *};
 use nix::libc::major;
 use pitch_detection::{detector::{mcleod::McLeodDetector, PitchDetector}, *};
 use rppal::{gpio::{Event, Gpio, InputPin, Trigger}, i2c::I2c};
@@ -579,7 +579,10 @@ fn main() {
                 gate_sound(chord_type, &mut current_notes);
                 let pre_rec_tof = tof_enabled.load(std::sync::atomic::Ordering::SeqCst);
                 tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
-                match record_sample(media_path.clone(), &mut sample_paths, &mut current_sample_idx, &mut next_sample_no, &mut ex_gpio, &mut display) {
+                let mut sound_dat = None;
+                (backend, manager, sound_dat) = record_sample(media_path.clone(), &mut sample_paths, &mut current_sample_idx, &mut next_sample_no, &mut ex_gpio, backend, manager, &mut display);
+                
+                match sound_dat {
                     Some((new_snd, new_freq)) => {
                         sound = new_snd;
                         current_freq = new_freq;
@@ -828,12 +831,14 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
     Some((out_sound, out_freq))
 }
 
-fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smpl_idx: &mut usize, next_smpl_no: &mut usize, ex_gpio: &mut MCP23017<I2c>, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> Option<(MemorySound, f64)> {
+fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smpl_idx: &mut usize, next_smpl_no: &mut usize, ex_gpio: &mut MCP23017<I2c>, backend: CpalBackend, manager: Manager, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> (CpalBackend, Manager, Option<(MemorySound, f64)>) {
 
 //     // give countdown
 //     // record sample
 //     // detect frequency
-    
+    drop(backend);
+    drop(manager);
+
     let sample_name = format!("sound_{}.wav", next_smpl_no);
     let rec_path = format!("{}/{}", media_path, sample_name);
 
@@ -851,7 +856,10 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             Err(_) => {
                 fullscreen_msg(display, "Recording fail!".to_string());
                 sleep(Duration::from_secs(1));
-                return None
+                let mut backend =
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+                return (backend, manager, None)
             }
         };
     
@@ -893,7 +901,10 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         Err(_) => {
             fullscreen_msg(display, "Err opening!".to_string());
             sleep(Duration::from_secs(1));
-            return None
+            let mut backend =
+                backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+            let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+            return (backend, manager, None)
         }
     };
     let mut test_sound = match wav_sound.into_memory_sound() {
@@ -901,7 +912,11 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         Err(_) => {
             fullscreen_msg(display, "Err loading!".to_string());
             sleep(Duration::from_secs(1));
-            return None
+            let mut backend =
+                backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+            let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+            return (backend, manager, None)
+
         }
     };
 
@@ -922,7 +937,10 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             Err(_) => {
                 fullscreen_msg(display, "Too short!".to_string());
                 sleep(Duration::from_secs(1));
-                return None
+                let mut backend =
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+                return (backend, manager, None)
             }
         } 
     }
@@ -936,7 +954,10 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             None => {
                 fullscreen_msg(display, "Err no pitch!".to_string());
                 sleep(Duration::from_secs(1));
-                return None
+                let mut backend =
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+                return (backend, manager, None)
             }
         };
     let out_freq: f64 = pitch.frequency;
@@ -944,8 +965,13 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     *next_smpl_no += 1;
     sample_paths.push(rec_path);
     *current_smpl_idx = sample_paths.len() - 1;
+
+    let mut backend =
+        backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+    let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+
     
-    Some((out_sound, out_freq))
+    (backend, manager, Some((out_sound, out_freq)))
 }
 
 fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundTup>, key: Key, octave: Octave, major: bool) {
