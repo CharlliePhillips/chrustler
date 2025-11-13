@@ -887,6 +887,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         }
     }
 
+    sleep(Duration::from_millis(500));
     let wav_sound = match awedio::sounds::open_file(rec_path.clone()) {
         Ok(sound) => sound,
         Err(_) => {
