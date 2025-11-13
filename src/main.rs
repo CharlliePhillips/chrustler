@@ -267,11 +267,11 @@ fn main() {
                         if entry.path().extension().unwrap().to_str().unwrap().eq("wav") {
                             let this_path = entry.path().to_str().unwrap().to_string();
                             sample_paths.push(entry.path().to_str().unwrap().to_string());
-                            let slash = this_path.rfind("/").unwrap();
+                            let after_slash = this_path.rfind("/").unwrap() + 1;
                             let dot = this_path.find(".").unwrap();
-                            if this_path[slash..slash + 6].eq("sound_") {
+                            if this_path[after_slash..after_slash + 6].eq("sound_") {
                                 println!("found '{}'", this_path);
-                                match this_path[slash + 6..dot].parse() {
+                                match this_path[after_slash + 6..dot].parse() {
                                     Ok(sampleno) => {
                                         if sampleno > next_sample_no {
                                             next_sample_no = sampleno;
@@ -776,6 +776,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
         Ok(sound) => sound,
         Err(_) => {
             fullscreen_msg(display, "Err opening!".to_string());
+            sleep(Duration::from_secs(1));
             return None
         }
     };
@@ -783,6 +784,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
         Ok(mem_snd) => mem_snd,
         Err(_) => {
             fullscreen_msg(display, "Err loading!".to_string());
+            sleep(Duration::from_secs(1));
             return None
         }
     };
@@ -803,6 +805,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
             }
             Err(_) => {
                 fullscreen_msg(display, "Too short!".to_string());
+                sleep(Duration::from_secs(1));
                 return None
             }
         } 
@@ -816,6 +819,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
             Some(pitch) => pitch,
             None => {
                 fullscreen_msg(display, "Err no pitch!".to_string());
+                sleep(Duration::from_secs(1));
                 return None
             }
         };
