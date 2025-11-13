@@ -3,7 +3,7 @@ use nix::libc::major;
 use pitch_detection::{detector::{mcleod::McLeodDetector, PitchDetector}, *};
 use rppal::{gpio::{Event, Gpio, InputPin, Trigger}, i2c::I2c};
 use core::num;
-use std::{env, fs, path, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::Duration};
+use std::{env, fmt::format, fs, path, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::{Duration, Instant}};
 use std::fs::File;
 use std::io;
 use embedded_graphics::{
@@ -164,7 +164,8 @@ fn main() {
     let _amix = std::process::Command::new("amixer")
         .args(vec!["-c", "1", "cset", "numid=6", vol])
         .spawn().expect("Failed to launch amixer!");
-            
+    
+    let mut int_io = true;
 
     let gpio = Gpio::new().expect("failed to init gpio");
     let i2c = rppal::i2c::I2c::new().expect("failed to open I2C bus!");
@@ -218,8 +219,8 @@ fn main() {
     let counter_b = Arc::new(AtomicI64::new(0));
     let counter_a_int = counter_a.clone();
     let counter_b_int = counter_b.clone();
-    enc_a_CLK.set_async_interrupt(rppal::gpio::Trigger::FallingEdge, Some(Duration::from_millis(7)),  move |e| encoders::encoder_pos(e, &enc_a_DT, &counter_a_int));
-    enc_b_CLK.set_async_interrupt(rppal::gpio::Trigger::FallingEdge, Some(Duration::from_millis(7)),  move |e| encoders::encoder_pos(e, &enc_b_DT, &counter_b_int));
+    let _ =  enc_a_CLK.set_async_interrupt(rppal::gpio::Trigger::FallingEdge, Some(Duration::from_millis(7)),  move |e| encoders::encoder_pos(e, &enc_a_DT, &counter_a_int));
+    let _ = enc_b_CLK.set_async_interrupt(rppal::gpio::Trigger::FallingEdge, Some(Duration::from_millis(7)),  move |e| encoders::encoder_pos(e, &enc_b_DT, &counter_b_int));
  
     let enc_a_pb = gpio.get(encoders::ENC_A_PB).expect("couldn't get GPIO").into_input_pullup();
     let enc_b_pb = gpio.get(encoders::ENC_B_PB).expect("couldn't get GPIO").into_input_pullup();
@@ -236,14 +237,28 @@ fn main() {
         backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
     let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
 
-    let mut next_sample_no: u64 = 0;
+    let mut next_sample_no: usize = 0;
     let mut sample_paths: Vec<String> = Vec::new();
+
+    // These three file operations should not fail on a Pi with user logged in.
     let mut media_users= fs::read_dir("/media").expect("No '/media' Directory!"); // list users
     let user_media = media_users.next().unwrap().expect("No media users!"); // get user dir
     let mut user_media_dir = fs::read_dir(user_media.path()).expect("No USB media!"); // list user drives
-    let usb_device = user_media_dir.next().unwrap().expect("No USB media!"); // get user drive
-    let mut user_media_dir = fs::read_dir(usb_device.path()).expect("No USB media!"); // list user drive files
-    let usb_path = usb_device.path().to_str().unwrap().to_string();
+    // ^^^
+
+    // If the usb drive is plugged in use that, if not default to CWD
+    let media_path_entry = match user_media_dir.next() {
+        Some(usb_media_path) => {
+            usb_media_path.expect("No USB media!").path() // get user drive
+        }
+        None => {
+            env::current_dir().expect("No current working dir!")
+        }
+    };
+    
+    let user_media_dir = fs::read_dir(media_path_entry.clone()).expect("No USB media!"); // list user drive files
+    let media_path = media_path_entry.to_str().unwrap().to_string();
+    
     for entry_res in user_media_dir {
         match entry_res {
             Ok(entry) => {
@@ -357,7 +372,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::ONE) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::I, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::i, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -370,7 +385,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::TWO) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::ii, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::iid, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -383,7 +398,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::THREE) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::III, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::iii, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -396,7 +411,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::FOUR) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::IV, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::iv, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -409,7 +424,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::FIVE) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::V, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::v, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -422,7 +437,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::SIX) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::VI, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::vi, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -434,7 +449,7 @@ fn main() {
                 if last_input != Some(keypad::Keypad::SEVEN) {
                     hold = false;
                     gate_sound(chord_type, &mut current_notes);
-                    if (major) {
+                    if major {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::VII, chord_type, major, &mut sound_cache, &mut current_notes);
                     } else {
                         play_chord(&mut manager, sound.clone(), key, current_octave, current_freq, Chords::vii, chord_type, major, &mut sound_cache, &mut current_notes);
@@ -560,7 +575,14 @@ fn main() {
                 gate_sound(chord_type, &mut current_notes);
                 let pre_rec_tof = tof_enabled.load(std::sync::atomic::Ordering::SeqCst);
                 tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
-                // TODO: recording routine
+                match record_sample(media_path.clone(), &mut sample_paths, &mut current_sample_idx, &mut next_sample_no, &mut ex_gpio, &mut display) {
+                    Some((new_snd, new_freq)) => {
+                        sound = new_snd;
+                        current_freq = new_freq;
+                        change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
+                    }
+                    None => {}
+                }
                 tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
                 last_input = Some(keypad::Keypad::STAR);
             },
@@ -606,8 +628,11 @@ fn main() {
         
         let mut cur_counter_b = counter_b.load(std::sync::atomic::Ordering::SeqCst);
         if last_input == None {
-                       
             // if audio output change - volume encoder push button
+            if enc_a_pb.is_low() {
+                int_io = set_io(int_io, &mut display);
+                last_input = Some(keypad::Keypad::IO);
+            }
 
             // if root note change - previous encoder value is different from current 
             if cur_counter_b != last_counter_b {
@@ -675,7 +700,7 @@ fn play_chord(manager: &mut Manager, sound: MemorySound, key: Key, octave: Octav
 }
 
 fn gate_sound(chord_type: u16, curr: &mut Vec<Controller<Stoppable<AdjustableSpeed<MemorySound>>>>) {
-    for i in  0..chord_type {
+    for _i in  0..chord_type {
         if (0) < curr.len() {
             let mut stop_snd = curr.remove(0);
             stop_snd.set_stopped();
@@ -758,7 +783,7 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
         }
     };
 
-    let mut out_sound = test_sound.clone();
+    let out_sound = test_sound.clone();
 
     let mut samples: [f64; 1024] = [0.0; 1024];
     for i in 0..1024 {
@@ -795,72 +820,121 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
     Some((out_sound, out_freq))
 }
 
-// fn record_sample(&mut display: Ssd1306/*scale, mode, sampleno*/) /*-> new sample cache, file to add, sound freq*/ {
-//     // disable TOF interrupt
+fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smpl_idx: &mut usize, next_smpl_no: &mut usize, ex_gpio: &mut MCP23017<I2c>, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> Option<(MemorySound, f64)> {
+
 //     // give countdown
 //     // record sample
-//     // detect frequency and record
-//     // enable TOF interrupt
-// 
-//     let text_style = MonoTextStyleBuilder::new()
-//         .font(&FONT_6X10)
-//         .text_color(BinaryColor::On)
-//         .build();
-// 
-//     Text::with_baseline("3", Point::new(8, 8), text_style, Baseline::Top)
-//         .draw(&mut display)
-//         .unwrap();
-//     display.flush().unwrap();
-//     sleep(Duration::from_secs(1));
-//     display.clear_buffer();
-//     Text::with_baseline("2", Point::new(8, 8), text_style, Baseline::Top)
-//         .draw(&mut display)
-//         .unwrap();
-//     display.flush().unwrap();
-// 
-//     sleep(Duration::from_secs(1));
-//     display.clear_buffer();
-//     Text::with_baseline("1", Point::new(8, 8), text_style, Baseline::Top)
-//         .draw(&mut display)
-//         .unwrap();
-//     display.flush().unwrap();
-// 
-//     sleep(Duration::from_secs(1));
-// 
-//     let arec= std::process::Command::new("arecord")
-//         .args(vec!["-D", "plughw:1,0", "-f", "S16_LE", "-c", "1", "-r", "48000", "test_arec.wav"])
-//         .spawn().expect("Failed to launch arecord!");
-//     println!("recording...");
-//     
-//     display.clear_buffer();
-//     Text::with_baseline("Recording", Point::new(8, 8), text_style, Baseline::Top)
-//         .draw(&mut display)
-//         .unwrap();
-//     display.flush().unwrap();
-// 
-//     
-//     // println!("Press enter to stop recording");
-//     // let stdin = io::stdin();
-//     // let input = &mut String::new();
-//     // let _ = stdin.read_line(input);
-//     let input = gpio.get(TEMP_PIN).expect("failed to get gpio 27!").into_input();
-//     
-//     let mut wait = input.is_high();
-//     while wait {
-//         wait = input.is_high();
-//     }
-// 
-//     // TODO: kill arec in case of sigint failure
-//     let _ = nix::sys::signal::kill(nix::unistd::Pid::from_raw(arec.id() as i32), nix::sys::signal::Signal::SIGINT);
-// 
-// }
+//     // detect frequency
+    
+    let sample_name = format!("sound_{}.wav", next_smpl_no);
+    let rec_path = format!("{}/{}", media_path, sample_name);
 
-// fn change_root(/*sound_freq, sound, new root*/) /*-> new sample cache */ {
-// 
-// }
+    fullscreen_msg(display, "Recording in 3".to_string());
+    sleep(Duration::from_secs(1));
+    fullscreen_msg(display, "Recording in 2".to_string());
+    sleep(Duration::from_secs(1));
+    fullscreen_msg(display, "Recording in 1".to_string());
+    sleep(Duration::from_secs(1));
+ 
+    let mut arec= match std::process::Command::new("arecord")
+        .args(vec!["-D", "plughw:1,0", "-f", "S16_LE", "-c", "1", "-r", "48000", rec_path.as_str()])
+        .spawn() {
+            Ok(arec) => arec,
+            Err(_) => {
+                fullscreen_msg(display, "Recording fail!".to_string());
+                return None
+            }
+        };
+    
+    fullscreen_msg(display, "Recording...".to_string());
+
+    let rec_start_time = Instant::now();
+    // Sample up to 10 minutes!
+    let max_rec_time = Duration::from_secs(600); 
+    loop {
+        match arec.try_wait() {
+            Ok(complete) => {
+                match complete {
+                    Some(_status) => break,
+                    None => {}
+                }
+            }
+            Err(_) => {
+                fullscreen_msg(display, "System error!".to_string());
+                return None
+
+            }
+        }
+
+        if keypad::get_keypad(ex_gpio, None) == Some(keypad::Keypad::STAR) || rec_start_time.elapsed() > max_rec_time {
+            match nix::sys::signal::kill(nix::unistd::Pid::from_raw(arec.id() as i32), nix::sys::signal::Signal::SIGINT) {
+                Ok(_) => {},
+                Err(_) => {
+                    let _ = nix::sys::signal::kill(nix::unistd::Pid::from_raw(arec.id() as i32), nix::sys::signal::Signal::SIGKILL);
+                }
+            }
+            break;
+        }
+    }
+
+    let wav_sound = match awedio::sounds::open_file(rec_path.clone()) {
+        Ok(sound) => sound,
+        Err(_) => {
+            fullscreen_msg(display, "Err opening!".to_string());
+            return None
+        }
+    };
+    let mut test_sound = match wav_sound.into_memory_sound() {
+        Ok(mem_snd) => mem_snd,
+        Err(_) => {
+            fullscreen_msg(display, "Err loading!".to_string());
+            return None
+        }
+    };
+
+    let out_sound = test_sound.clone();
+
+    let mut samples: [f64; 1024] = [0.0; 1024];
+    for i in 0..1024 {
+        samples[i] = match test_sound.next_sample() {
+            Ok(sample) => {
+                match sample {
+                    NextSample::Sample(s) =>  {
+                        let test_sample = (s as f64) / 32768.0;
+                        test_sample
+                    },
+                    _ => 0.0
+                }
+            }
+            Err(_) => {
+                fullscreen_msg(display, "Too short!".to_string());
+                return None
+            }
+        } 
+    }
+    
+    let mut detector = McLeodDetector::new(SIZE, PADDING);
+
+        // detect frequency and TODO: record frequency
+    let pitch = match detector
+        .get_pitch(&samples, SAMPLE_RATE, POWER_THRESHOLD, CLARITY_THRESHOLD) {
+            Some(pitch) => pitch,
+            None => {
+                fullscreen_msg(display, "Err no pitch!".to_string());
+                return None
+            }
+        };
+    let out_freq: f64 = pitch.frequency;
+    
+    *next_smpl_no += 1;
+    sample_paths.push(rec_path);
+    *current_smpl_idx = sample_paths.len() - 1;
+    
+    Some((out_sound, out_freq))
+}
 
 fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundTup>, key: Key, octave: Octave, major: bool) {
-    for i in 0..sound_cache.len() {
+    for _i in 0..sound_cache.len() {
         sound_cache.remove(0);
     }
     let correction = match octave {
@@ -875,68 +949,67 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
         }
     };
 
-    let two: f64 = 2.0;
     if major {
-        let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[0] * correction) as f32).stoppable().controllable();
+        let base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[0] * correction) as f32).stoppable().controllable();
         sound_cache.push(base); 
-        let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[1] * correction) as f32).stoppable().controllable();
+        let second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[1] * correction) as f32).stoppable().controllable();
         sound_cache.push(second); 
-        let mut third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[2] * correction) as f32).stoppable().controllable();
+        let third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[2] * correction) as f32).stoppable().controllable();
         sound_cache.push(third); 
-        let mut fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[3] * correction) as f32).stoppable().controllable();
+        let fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[3] * correction) as f32).stoppable().controllable();
         sound_cache.push(fourth); 
-        let mut fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[4] * correction) as f32).stoppable().controllable();
+        let fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[4] * correction) as f32).stoppable().controllable();
         sound_cache.push(fifth); 
-        let mut sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[5] * correction) as f32).stoppable().controllable();
+        let sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[5] * correction) as f32).stoppable().controllable();
         sound_cache.push(sixth); 
-        let mut seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[6] * correction) as f32).stoppable().controllable();
+        let seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[6] * correction) as f32).stoppable().controllable();
         sound_cache.push(seventh); 
-        let mut base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[7] * correction) as f32).stoppable().controllable();
+        let base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[7] * correction) as f32).stoppable().controllable();
         sound_cache.push(base_oct);
-        let mut second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[8] * correction) as f32).stoppable().controllable();
+        let second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[8] * correction) as f32).stoppable().controllable();
         sound_cache.push(second_oct); 
-        let mut third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[9] * correction) as f32).stoppable().controllable();
+        let third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[9] * correction) as f32).stoppable().controllable();
         sound_cache.push(third_oct); 
-        let mut fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[10] * correction) as f32).stoppable().controllable();
+        let fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[10] * correction) as f32).stoppable().controllable();
         sound_cache.push(fourth_oct); 
-        let mut fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[11] * correction) as f32).stoppable().controllable();
+        let fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[11] * correction) as f32).stoppable().controllable();
         sound_cache.push(fifth_oct); 
-        let mut sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[12] * correction) as f32).stoppable().controllable();
+        let sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[12] * correction) as f32).stoppable().controllable();
         sound_cache.push(sixth_oct); 
-        let mut seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[13] * correction) as f32).stoppable().controllable();
+        let seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[13] * correction) as f32).stoppable().controllable();
         sound_cache.push(seventh_oct);
-        let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[14] * correction) as f32).stoppable().controllable();
+        let base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MAJ_MUL[14] * correction) as f32).stoppable().controllable();
         sound_cache.push(base_oct2); 
     } else {
-        let mut base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[0] * correction) as f32).stoppable().controllable();
+        let base: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[0] * correction) as f32).stoppable().controllable();
         sound_cache.push(base); 
-        let mut second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[1] * correction) as f32).stoppable().controllable();
+        let second: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[1] * correction) as f32).stoppable().controllable();
         sound_cache.push(second); 
-        let mut third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[2] * correction) as f32).stoppable().controllable();
+        let third: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[2] * correction) as f32).stoppable().controllable();
         sound_cache.push(third); 
-        let mut fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[3] * correction) as f32).stoppable().controllable();
+        let fourth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[3] * correction) as f32).stoppable().controllable();
         sound_cache.push(fourth); 
-        let mut fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[4] * correction) as f32).stoppable().controllable();
+        let fifth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[4] * correction) as f32).stoppable().controllable();
         sound_cache.push(fifth); 
-        let mut sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[5] * correction) as f32).stoppable().controllable();
+        let sixth: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[5] * correction) as f32).stoppable().controllable();
         sound_cache.push(sixth); 
-        let mut seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[6] * correction) as f32).stoppable().controllable();
+        let seventh: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[6] * correction) as f32).stoppable().controllable();
         sound_cache.push(seventh); 
-        let mut base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[7] * correction) as f32).stoppable().controllable();
+        let base_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[7] * correction) as f32).stoppable().controllable();
         sound_cache.push(base_oct);
-        let mut second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[8] * correction) as f32).stoppable().controllable();
+        let second_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[8] * correction) as f32).stoppable().controllable();
         sound_cache.push(second_oct); 
-        let mut third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[9] * correction) as f32).stoppable().controllable();
+        let third_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[9] * correction) as f32).stoppable().controllable();
         sound_cache.push(third_oct); 
-        let mut fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[10] * correction) as f32).stoppable().controllable();
+        let fourth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[10] * correction) as f32).stoppable().controllable();
         sound_cache.push(fourth_oct); 
-        let mut fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[11] * correction) as f32).stoppable().controllable();
+        let fifth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[11] * correction) as f32).stoppable().controllable();
         sound_cache.push(fifth_oct); 
-        let mut sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[12] * correction) as f32).stoppable().controllable();
+        let sixth_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[12] * correction) as f32).stoppable().controllable();
         sound_cache.push(sixth_oct); 
-        let mut seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[13] * correction) as f32).stoppable().controllable();
+        let seventh_oct: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[13] * correction) as f32).stoppable().controllable();
         sound_cache.push(seventh_oct);
-        let mut base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[14] * correction) as f32).stoppable().controllable();
+        let base_oct2: (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>) = sound.clone().with_adjustable_speed_of((MIN_MUL[14] * correction) as f32).stoppable().controllable();
         sound_cache.push(base_oct2); 
     }
 
@@ -1026,4 +1099,152 @@ fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
 
     display.flush().unwrap(); 
 
+}
+
+fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> bool {
+    if int_io {
+        // switch to external IO
+//        control.73 {
+//	    	iface MIXER
+//	    	name 'Mixin Left Mic 1 Switch'
+//	    	value false
+//	    	comment {
+//	    		access 'read write'
+//	    		type BOOLEAN
+//	    		count 1
+//	    	}
+//	    }
+//	    control.78 {
+//	    	iface MIXER
+//	    	name 'Mixin Right Mic 1 Switch'
+//	    	value false
+//	    	comment {
+//	    		access 'read write'
+//	    		type BOOLEAN
+//	    		count 1
+//	    	}
+//	    }
+        fullscreen_msg(display, "I/O External".to_string());
+        false
+    } else {
+//	    control.74 {
+//	    	iface MIXER
+//	    	name 'Mixin Left Mic 2 Switch'
+//	    	value true
+//	    	comment {
+//	    		access 'read write'
+//	    		type BOOLEAN
+//	    		count 1
+//	    	}
+//	    }
+//	    control.77 {
+//	    	iface MIXER
+//	    	name 'Mixin Right Mic 2 Switch'
+//	    	value true
+//	    	comment {
+//	    		access 'read write'
+//	    		type BOOLEAN
+//	    		count 1
+//	    	}
+//	    }
+        fullscreen_msg(display, "I/O Internal".to_string());
+        true
+    }
+//	control.67 {
+//		iface MIXER
+//		name 'MIC Jack Switch'
+//		value true
+//		comment {
+//			access 'read write'
+//			type BOOLEAN
+//			count 1
+//		}
+//	}
+//	control.68 {
+//		iface MIXER
+//		name 'Onboard MIC Switch'
+//		value true
+//		comment {
+//			access 'read write'
+//			type BOOLEAN
+//			count 1
+//		}
+//	}
+
+// these appear to be the same between configs
+// maybe disable MIC jack to ensure onboard is used?
+// rest of config could remain for external in case headphones are used without an ext src
+
+// should be able to switch Headphone with lineout for ext/internal output
+
+// CONFIG = ZERO
+//	control.1 {
+//		iface MIXER
+//		name 'Mic 1 Volume'
+//		value 0
+//		comment {
+//			access 'read write'
+//			type INTEGER
+//			count 1
+//			range '0 - 7'
+//			dbmin -600
+//			dbmax 3600
+//			dbvalue.0 -600
+//		}
+//	}
+//	control.2 {
+//		iface MIXER
+//		name 'Mic 2 Volume'
+//		value 5
+//		comment {
+//			access 'read write'
+//			type INTEGER
+//			count 1
+//			range '0 - 7'
+//			dbmin -600
+//			dbmax 3600
+//			dbvalue.0 2400
+//		}
+//	}
+//	control.23 {
+//		iface MIXER
+//		name 'Mic 1 Switch'
+//		value false
+//		comment {
+//			access 'read write'
+//			type BOOLEAN
+//			count 1
+//		}
+//	}
+//	control.24 {
+//		iface MIXER
+//		name 'Mic 2 Switch'
+//		value true
+//		comment {
+//			access 'read write'
+//			type BOOLEAN
+//			count 1
+//		}
+//	}
+//	control.28 {
+//		iface MIXER
+//		name 'Headphone Switch'
+//		value.0 false
+//		value.1 false
+//		comment {
+//			access 'read write'
+//			type BOOLEAN
+//			count 2
+//		}
+//	}
+//	control.29 {
+//		iface MIXER
+//		name 'Lineout Switch'
+//		value true
+//		comment {
+//			access 'read write'
+//			type BOOLEAN
+//			count 1
+//		}
+//	}
 }
