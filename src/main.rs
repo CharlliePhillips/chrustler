@@ -1,9 +1,9 @@
 use awedio::{backends::CpalBufferSize, manager::Manager, sounds::{MemorySound, wrappers::{AdjustableSpeed, Controllable, Controller, Pausable, Stoppable}}, *};
 use nix::libc::major;
 use pitch_detection::{detector::{mcleod::McLeodDetector, PitchDetector}, *};
-use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
+use rppal::{gpio::{Event, Gpio, InputPin, Trigger}, i2c::I2c};
 use core::num;
-use std::{env, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::Duration};
+use std::{env, fs, path, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::Duration};
 use std::fs::File;
 use std::io;
 use embedded_graphics::{
@@ -221,6 +221,9 @@ fn main() {
     enc_a_CLK.set_async_interrupt(rppal::gpio::Trigger::FallingEdge, Some(Duration::from_millis(7)),  move |e| encoders::encoder_pos(e, &enc_a_DT, &counter_a_int));
     enc_b_CLK.set_async_interrupt(rppal::gpio::Trigger::FallingEdge, Some(Duration::from_millis(7)),  move |e| encoders::encoder_pos(e, &enc_b_DT, &counter_b_int));
  
+    let enc_a_pb = gpio.get(encoders::ENC_A_PB).expect("couldn't get GPIO").into_input_pullup();
+    let enc_b_pb = gpio.get(encoders::ENC_B_PB).expect("couldn't get GPIO").into_input_pullup();
+
 
         // init keypad
     let i2c = rppal::i2c::I2c::new().expect("failed to open I2C bus!");
@@ -233,10 +236,51 @@ fn main() {
         backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
     let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
 
-    // TODO: Grab test sound
-    let wav_sound = awedio::sounds::open_file("test_arec.wav").expect("couldn't open audio file");
+    let mut next_sample_no: u64 = 0;
+    let mut sample_paths: Vec<String> = Vec::new();
+    let mut media_users= fs::read_dir("/media").expect("No '/media' Directory!"); // list users
+    let user_media = media_users.next().unwrap().expect("No media users!"); // get user dir
+    let mut user_media_dir = fs::read_dir(user_media.path()).expect("No USB media!"); // list user drives
+    let usb_device = user_media_dir.next().unwrap().expect("No USB media!"); // get user drive
+    let mut user_media_dir = fs::read_dir(usb_device.path()).expect("No USB media!"); // list user drive files
+    let usb_path = usb_device.path().to_str().unwrap().to_string();
+    for entry_res in user_media_dir {
+        match entry_res {
+            Ok(entry) => {
+                if entry.path().extension().is_some() {
+                    if entry.path().extension().unwrap().to_str().is_some() {
+                        if entry.path().extension().unwrap().to_str().unwrap().eq("wav") {
+                            let this_path = entry.path().extension().unwrap().to_str().unwrap().to_string();
+                            sample_paths.push(entry.path().extension().unwrap().to_str().unwrap().to_string());
+                            let dot = this_path.find(".").unwrap();
+                            if this_path[0..6].eq("sound_") {
+                                match this_path[6..dot].parse() {
+                                    Ok(sampleno) => {
+                                        if sampleno > next_sample_no {
+                                            next_sample_no = sampleno;
+                                        }
+                                    }
+                                    Err(_) => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    }
+
+    let mut current_sample_idx: usize = 0;
+    let init_smpl_path = if sample_paths.len() > 0 {
+        sample_paths[current_sample_idx].clone()
+    } else {
+        "test_arec.wav".to_string()
+    };
+
+    let wav_sound = awedio::sounds::open_file(init_smpl_path).expect("couldn't open audio file");
     let mut test_sound = wav_sound.into_memory_sound().expect("Could not make memory sound");
-    let sound = test_sound.clone();
+    let mut sound = test_sound.clone();
 
     let mut samples: [f64; 1024] = [0.0; 1024];
     for i in 0..1024 {
@@ -256,6 +300,7 @@ fn main() {
         .get_pitch(&samples, SAMPLE_RATE, POWER_THRESHOLD, CLARITY_THRESHOLD)
         .unwrap();
     let mut current_freq: f64 = pitch.frequency;
+
     let mut key =  Key::C;
     let mut key_idx = 0;
     //let correction: f64 = key.frequency() / (current_freq as f64);
@@ -559,7 +604,7 @@ fn main() {
         }
         last_counter_a = cur_counter_a;
         
-        let cur_counter_b = counter_b.load(std::sync::atomic::Ordering::SeqCst);
+        let mut cur_counter_b = counter_b.load(std::sync::atomic::Ordering::SeqCst);
         if last_input == None {
                        
             // if audio output change - volume encoder push button
@@ -585,6 +630,15 @@ fn main() {
             }
 
             // if file select toggle - enter sample select mode if in playback
+            if enc_b_pb.is_low() {
+                match sample_select(&sample_paths, &mut current_sample_idx, &enc_b_pb, counter_b.clone(), &mut cur_counter_b, &mut display) {
+                    Some((new_sound, new_freq)) => {
+                        current_freq = new_freq;
+                        sound = new_sound;
+                    }
+                    None => {}
+                }
+            }
         }
         last_counter_b = cur_counter_b;
     }    
@@ -627,14 +681,115 @@ fn gate_sound(chord_type: u16, curr: &mut Vec<Controller<Stoppable<AdjustableSpe
     }
 }
 
-fn sample_select(/*scale, mode*/) {
+fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_pb: &InputPin, enc_cnt: Arc<AtomicI64>, cur_enc_cnt: &mut i64, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> Option<(MemorySound, f64)> {
     // start on current sample
 
     // while root note encoder push button has not been pressed
         // determine encoder left and right to cycle through discovered samples
         // set new sample file as the current sample
     // detect frequency and record
+    fullscreen_msg(display, "Sample Select".to_string());
+    sleep(Duration::from_millis(1000));
 
+    let cur_smpl = sample_paths[*current_smpl_idx].clone();
+    let mut name_begin = cur_smpl.rfind("/").unwrap_or(0);
+    if name_begin > 0 {
+        name_begin += 1;
+    }
+    let trunc_smpl = &cur_smpl[name_begin..cur_smpl.len()-4];
+    let trunc_smpl_string = if trunc_smpl.len() > 16 {
+        trunc_smpl[0..16].to_string()
+    } else {
+        trunc_smpl.to_string()
+    };
+    fullscreen_msg(display, trunc_smpl_string);
+    sleep(Duration::from_millis(500));
+    
+    let last_enc_cnt = *cur_enc_cnt;
+    loop {
+        *cur_enc_cnt = enc_cnt.load(std::sync::atomic::Ordering::SeqCst);
+
+        if *cur_enc_cnt != last_enc_cnt {
+            let enc_diff: i64 = *cur_enc_cnt - last_enc_cnt;
+            let new_idx: i64 = (*current_smpl_idx as i64) + enc_diff;
+            
+            *current_smpl_idx = if (new_idx as usize) >= sample_paths.len() {
+                0
+            } else if new_idx < 0 {
+                sample_paths.len() - 1
+            } else {
+                new_idx as usize
+            };
+        }
+        
+        let cur_smpl = sample_paths[*current_smpl_idx].clone();
+        let mut name_begin = cur_smpl.rfind("/").unwrap_or(0);
+        if name_begin > 0 {
+            name_begin += 1;
+        }
+        let trunc_smpl = &cur_smpl[name_begin..cur_smpl.len()-4];
+        let trunc_smpl_string = if trunc_smpl.len() > 16 {
+            trunc_smpl[0..16].to_string()
+        } else {
+            trunc_smpl.to_string()
+        };
+        fullscreen_msg(display, trunc_smpl_string);
+        //sleep(Duration::from_millis(500));
+
+        if enc_pb.is_low() {
+            break;
+        }
+    }
+    let wav_sound = match awedio::sounds::open_file(cur_smpl) {
+        Ok(sound) => sound,
+        Err(_) => {
+            fullscreen_msg(display, "Err opening!".to_string());
+            return None
+        }
+    };
+    let mut test_sound = match wav_sound.into_memory_sound() {
+        Ok(mem_snd) => mem_snd,
+        Err(_) => {
+            fullscreen_msg(display, "Err loading!".to_string());
+            return None
+        }
+    };
+
+    let mut out_sound = test_sound.clone();
+
+    let mut samples: [f64; 1024] = [0.0; 1024];
+    for i in 0..1024 {
+        samples[i] = match test_sound.next_sample() {
+            Ok(sample) => {
+                match sample {
+                    NextSample::Sample(s) =>  {
+                        let test_sample = (s as f64) / 32768.0;
+                        test_sample
+                    },
+                    _ => 0.0
+                }
+            }
+            Err(_) => {
+                fullscreen_msg(display, "Too short!".to_string());
+                return None
+            }
+        } 
+    }
+    
+    let mut detector = McLeodDetector::new(SIZE, PADDING);
+
+        // detect frequency and TODO: record frequency
+    let pitch = match detector
+        .get_pitch(&samples, SAMPLE_RATE, POWER_THRESHOLD, CLARITY_THRESHOLD) {
+            Some(pitch) => pitch,
+            None => {
+                fullscreen_msg(display, "Err no pitch!".to_string());
+                return None
+            }
+        };
+    let out_freq: f64 = pitch.frequency;
+    
+    Some((out_sound, out_freq))
 }
 
 // fn record_sample(&mut display: Ssd1306/*scale, mode, sampleno*/) /*-> new sample cache, file to add, sound freq*/ {
@@ -861,7 +1016,8 @@ fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
 
     display.clear_buffer(); 
 
-    Text::with_baseline(&text, Point::new(2, 26), text_style, Baseline::Top)
+    let x: i32 = 128 - (((text.len() as i32) * 8) / 2);
+    Text::with_baseline(&text, Point::new(x, 26), text_style, Baseline::Top)
         .draw(display)
         .unwrap();
 
