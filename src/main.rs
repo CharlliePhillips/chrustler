@@ -250,8 +250,8 @@ fn main() {
                 if entry.path().extension().is_some() {
                     if entry.path().extension().unwrap().to_str().is_some() {
                         if entry.path().extension().unwrap().to_str().unwrap().eq("wav") {
-                            let this_path = entry.path().extension().unwrap().to_str().unwrap().to_string();
-                            sample_paths.push(entry.path().extension().unwrap().to_str().unwrap().to_string());
+                            let this_path = entry.path().to_str().unwrap().to_string();
+                            sample_paths.push(entry.path().to_str().unwrap().to_string());
                             let dot = this_path.find(".").unwrap();
                             if this_path[0..6].eq("sound_") {
                                 match this_path[6..dot].parse() {
