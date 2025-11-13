@@ -267,9 +267,11 @@ fn main() {
                         if entry.path().extension().unwrap().to_str().unwrap().eq("wav") {
                             let this_path = entry.path().to_str().unwrap().to_string();
                             sample_paths.push(entry.path().to_str().unwrap().to_string());
+                            let slash = this_path.rfind("/").unwrap();
                             let dot = this_path.find(".").unwrap();
-                            if this_path[0..6].eq("sound_") {
-                                match this_path[6..dot].parse() {
+                            if this_path[slash..slash + 6].eq("sound_") {
+                                println!("found '{}'", this_path);
+                                match this_path[slash + 6..dot].parse() {
                                     Ok(sampleno) => {
                                         if sampleno > next_sample_no {
                                             next_sample_no = sampleno;
@@ -285,6 +287,8 @@ fn main() {
             Err(_) => {}
         }
     }
+
+    next_sample_no = next_sample_no + 1;
 
     let mut current_sample_idx: usize = 0;
     let init_smpl_path = if sample_paths.len() > 0 {
@@ -842,6 +846,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             Ok(arec) => arec,
             Err(_) => {
                 fullscreen_msg(display, "Recording fail!".to_string());
+                sleep(Duration::from_secs(1));
                 return None
             }
         };
@@ -861,6 +866,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             }
             Err(_) => {
                 fullscreen_msg(display, "System error!".to_string());
+                sleep(Duration::from_secs(1));
                 return None
 
             }
@@ -881,6 +887,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         Ok(sound) => sound,
         Err(_) => {
             fullscreen_msg(display, "Err opening!".to_string());
+            sleep(Duration::from_secs(1));
             return None
         }
     };
@@ -888,6 +895,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         Ok(mem_snd) => mem_snd,
         Err(_) => {
             fullscreen_msg(display, "Err loading!".to_string());
+            sleep(Duration::from_secs(1));
             return None
         }
     };
@@ -908,6 +916,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             }
             Err(_) => {
                 fullscreen_msg(display, "Too short!".to_string());
+                sleep(Duration::from_secs(1));
                 return None
             }
         } 
@@ -921,6 +930,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             Some(pitch) => pitch,
             None => {
                 fullscreen_msg(display, "Err no pitch!".to_string());
+                sleep(Duration::from_secs(1));
                 return None
             }
         };
