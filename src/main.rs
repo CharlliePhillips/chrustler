@@ -157,9 +157,6 @@ enum Octave {
 }
 type SoundTup = (Controllable<Stoppable<AdjustableSpeed<MemorySound>>>, Controller<Stoppable<AdjustableSpeed<MemorySound>>>);
 fn main() {
-    println!("default host_id: {:#?}", cpal::platform::default_host().id());
-
-
     // Setup
     let mut volume: i64 = 75;
     let vol_string = format!("{}%", VOL_LUT[volume as usize]);
@@ -839,8 +836,6 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
 //     // give countdown
 //     // record sample
 //     // detect frequency
-    println!("default host_id: {:#?}", cpal::platform::default_host().id());
-    
     drop(manager);
     drop(backend);
     //manager = backends::CpalBackend::new(1, 48000, CpalBufferSize::Default, cpal::platform::, sample_format)
@@ -855,7 +850,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     fullscreen_msg(display, "Recording in 1".to_string());
     sleep(Duration::from_secs(1));
  
-    let arec= match std::process::Command::new("arecord")
+    let mut arec= match std::process::Command::new("arecord")
         .args(vec!["-D", "plughw:1,0", "-f", "S32_LE", "-c", "1", "-r", "48000", rec_path.as_str()])
         .spawn() {
             Ok(arec) => arec,
@@ -875,20 +870,22 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     // Sample up to 10 minutes!
     let max_rec_time = Duration::from_secs(600); 
     loop {
-        // match arec.try_wait() {
-        //     Ok(complete) => {
-        //         match complete {
-        //             Some(_status) => break,
-        //             None => {}
-        //         }
-        //     }
-        //     Err(_) => {
-        //         fullscreen_msg(display, "System error!".to_string());
-        //         sleep(Duration::from_secs(1));
-        //         return None
-
-        //     }
-        // }
+        match arec.try_wait() {
+            Ok(complete) => {
+                match complete {
+                    Some(_status) => break,
+                    None => {}
+                }
+            }
+            Err(_) => {
+                fullscreen_msg(display, "System error!".to_string());
+                sleep(Duration::from_secs(1));
+                let mut backend =
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
+                return (backend, manager, None)
+            }
+        }
 
         if keypad::get_keypad(ex_gpio, None) == Some(keypad::Keypad::STAR) || rec_start_time.elapsed() > max_rec_time {
             match nix::sys::signal::kill(nix::unistd::Pid::from_raw(arec.id() as i32), nix::sys::signal::Signal::SIGINT) {
