@@ -237,7 +237,7 @@ fn main() {
 
     // Setup audio backend
     let mut backend =
-        backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+        backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
     let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
 
     let mut next_sample_no: usize = 0;
@@ -843,7 +843,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     
     drop(manager);
     drop(backend);
-    //manager = backends::CpalBackend::new(1, 48000, CpalBufferSize::Default, cpal::platform::, sample_format)
+    //manager = backends::CpalBackend::new(1, 48000, CpalBufferSize::Fixed(512), cpal::platform::, sample_format)
 
     let sample_name = format!("sound_{}.wav", next_smpl_no);
     let rec_path = format!("{}/{}", media_path, sample_name);
@@ -856,14 +856,14 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     sleep(Duration::from_secs(1));
  
     let arec= match std::process::Command::new("arecord")
-        .args(vec!["-D", "plughw:1,0", "-f", "S16_LE", "-c", "1", "-r", "48000", rec_path.as_str()])
+        .args(vec!["--buffer-size=512", "-D", "plughw:1,0", "-f", "S16_LE", "-c", "1", "-r", "48000", rec_path.as_str()])
         .spawn() {
             Ok(arec) => arec,
             Err(_) => {
                 fullscreen_msg(display, "Recording fail!".to_string());
                 sleep(Duration::from_secs(1));
                 let mut backend =
-                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
                 let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
                 return (backend, manager, None)
             }
@@ -908,7 +908,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             fullscreen_msg(display, "Err opening!".to_string());
             sleep(Duration::from_secs(1));
             let mut backend =
-                backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
             let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
             return (backend, manager, None)
         }
@@ -919,7 +919,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
             fullscreen_msg(display, "Err loading!".to_string());
             sleep(Duration::from_secs(1));
             let mut backend =
-                backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
             let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
             return (backend, manager, None)
 
@@ -944,7 +944,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
                 fullscreen_msg(display, "Too short!".to_string());
                 sleep(Duration::from_secs(1));
                 let mut backend =
-                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
                 let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
                 return (backend, manager, None)
             }
@@ -961,7 +961,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
                 fullscreen_msg(display, "Err no pitch!".to_string());
                 sleep(Duration::from_secs(1));
                 let mut backend =
-                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+                    backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
                 let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
                 return (backend, manager, None)
             }
@@ -973,7 +973,7 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
     *current_smpl_idx = sample_paths.len() - 1;
 
     let mut backend =
-        backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Default).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
+        backends::CpalBackend::with_default_host_and_device(1,48000,CpalBufferSize::Fixed(512)).ok_or(backends::CpalBackendError::NoDevice).expect("failed to initilize cpal backend!");
     let mut manager = backend.start(|error| eprintln!("error with cpal output stream: {}", error)).expect("failed to initialize sound manager!");
 
     (backend, manager, Some((out_sound, out_freq)))
