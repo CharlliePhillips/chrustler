@@ -1176,7 +1176,7 @@ fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x
         sleep(std::time::Duration::from_millis(50));
 
         let _aux_vol= std::process::Command::new("amixer")
-            .args(vec!["-c", "1", "cset", "numid=3", "40"])
+            .args(vec!["-c", "1", "cset", "numid=3", "34"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
@@ -1218,7 +1218,7 @@ fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x
         sleep(std::time::Duration::from_millis(50));
 
         let _mems_mic_vol= std::process::Command::new("amixer")
-            .args(vec!["-c", "1", "cset", "numid=2", "15"])
+            .args(vec!["-c", "1", "cset", "numid=2", "3"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
