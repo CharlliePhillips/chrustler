@@ -1146,148 +1146,49 @@ fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
 
 fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> bool {
     if int_io {
-        // switch to external IO
-//        control.73 {
-//	    	iface MIXER
-//	    	name 'Mixin Left Mic 1 Switch'
-//	    	value false
-//	    	comment {
-//	    		access 'read write'
-//	    		type BOOLEAN
-//	    		count 1
-//	    	}
-//	    }
-//	    control.78 {
-//	    	iface MIXER
-//	    	name 'Mixin Right Mic 1 Switch'
-//	    	value false
-//	    	comment {
-//	    		access 'read write'
-//	    		type BOOLEAN
-//	    		count 1
-//	    	}
-//	    }
+        let _hp_en= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=28", "on"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
+        let _spk_dis= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=29", "off"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
         fullscreen_msg(display, "I/O External".to_string());
+        let _aux_en = std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=78", "on"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+        
+        let _mems_mic_dis = std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=77", "off"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
         false
     } else {
-//	    control.74 {
-//	    	iface MIXER
-//	    	name 'Mixin Left Mic 2 Switch'
-//	    	value true
-//	    	comment {
-//	    		access 'read write'
-//	    		type BOOLEAN
-//	    		count 1
-//	    	}
-//	    }
-//	    control.77 {
-//	    	iface MIXER
-//	    	name 'Mixin Right Mic 2 Switch'
-//	    	value true
-//	    	comment {
-//	    		access 'read write'
-//	    		type BOOLEAN
-//	    		count 1
-//	    	}
-//	    }
         fullscreen_msg(display, "I/O Internal".to_string());
+        let _hp_dis= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=28", "off"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
+        let _spk_en= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=29", "on"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
+        let _aux_dis= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=78", "off"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
+        let _mems_mic_en= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=77", "on"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
         true
     }
-//	control.67 {
-//		iface MIXER
-//		name 'MIC Jack Switch'
-//		value true
-//		comment {
-//			access 'read write'
-//			type BOOLEAN
-//			count 1
-//		}
-//	}
-//	control.68 {
-//		iface MIXER
-//		name 'Onboard MIC Switch'
-//		value true
-//		comment {
-//			access 'read write'
-//			type BOOLEAN
-//			count 1
-//		}
-//	}
-
-// these appear to be the same between configs
-// maybe disable MIC jack to ensure onboard is used?
-// rest of config could remain for external in case headphones are used without an ext src
-
-// should be able to switch Headphone with lineout for ext/internal output
-
-// CONFIG = ZERO
-//	control.1 {
-//		iface MIXER
-//		name 'Mic 1 Volume'
-//		value 0
-//		comment {
-//			access 'read write'
-//			type INTEGER
-//			count 1
-//			range '0 - 7'
-//			dbmin -600
-//			dbmax 3600
-//			dbvalue.0 -600
-//		}
-//	}
-//	control.2 {
-//		iface MIXER
-//		name 'Mic 2 Volume'
-//		value 5
-//		comment {
-//			access 'read write'
-//			type INTEGER
-//			count 1
-//			range '0 - 7'
-//			dbmin -600
-//			dbmax 3600
-//			dbvalue.0 2400
-//		}
-//	}
-//	control.23 {
-//		iface MIXER
-//		name 'Mic 1 Switch'
-//		value false
-//		comment {
-//			access 'read write'
-//			type BOOLEAN
-//			count 1
-//		}
-//	}
-//	control.24 {
-//		iface MIXER
-//		name 'Mic 2 Switch'
-//		value true
-//		comment {
-//			access 'read write'
-//			type BOOLEAN
-//			count 1
-//		}
-//	}
-//	control.28 {
-//		iface MIXER
-//		name 'Headphone Switch'
-//		value.0 false
-//		value.1 false
-//		comment {
-//			access 'read write'
-//			type BOOLEAN
-//			count 2
-//		}
-//	}
-//	control.29 {
-//		iface MIXER
-//		name 'Lineout Switch'
-//		value true
-//		comment {
-//			access 'read write'
-//			type BOOLEAN
-//			count 1
-//		}
-//	}
 }
