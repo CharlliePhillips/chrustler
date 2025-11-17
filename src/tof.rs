@@ -66,11 +66,11 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
                 if cur_roi.load(std::sync::atomic::Ordering::SeqCst) {
                     set_filter(FilterType::LPF, filter_strength, cur_hpf, cur_lpf);
                     cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
-                    sensor.set_user_roi(0, 15, 4, 0).expect("failed to set ROI Left during interrupt");
+                    sensor.set_user_roi(0, 15, 3, 0).expect("failed to set ROI Left during interrupt");
                 } else {
                     set_filter(FilterType::HPF, filter_strength, cur_hpf, cur_lpf);
                     cur_roi.store(true, std::sync::atomic::Ordering::SeqCst);
-                    sensor.set_user_roi(11, 15, 15, 0).expect("failed to set ROI Right during interrupt");
+                    sensor.set_user_roi(12, 15, 15, 0).expect("failed to set ROI Right during interrupt");
                 }
             }
             _ => {}

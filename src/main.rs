@@ -247,7 +247,7 @@ fn main() {
     // ^^^
 
     // If the usb drive is plugged in use that, if not default to CWD
-    let media_path_entry = match user_media_dir.next() {
+    let mut media_path_entry = match user_media_dir.next() {
         Some(usb_media_path) => {
             usb_media_path.expect("No USB media!").path() // get user drive
         }
@@ -256,7 +256,15 @@ fn main() {
         }
     };
     
-    let user_media_dir = fs::read_dir(media_path_entry.clone()).expect("No USB media!"); // list user drive files
+    println!("using {:#?}", media_path_entry);
+    let user_media_dir = match fs::read_dir(media_path_entry.clone()) { // list user drive files
+         Ok(dir) => dir,
+         Err(_) => {
+            println!("using {:#?}", media_path_entry);
+            media_path_entry = env::current_dir().expect("No current working dir!");
+            fs::read_dir(media_path_entry.clone()).expect("failed to read CWD!")
+         }
+    };
     let media_path = media_path_entry.to_str().unwrap().to_string();
     
     for entry_res in user_media_dir {
