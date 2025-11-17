@@ -1169,12 +1169,21 @@ fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x
             .args(vec!["-c", "1", "cset", "numid=78", "on"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
-        
+
+        let _aux_vol= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=2", "40"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
         let _mems_mic_dis = std::process::Command::new("amixer")
             .args(vec!["-c", "1", "cset", "numid=77", "off"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
-
+        
+        let _mems_mic_vol= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=2", "15"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
         false
     } else {
         fullscreen_msg(display, "I/O Internal".to_string());
@@ -1193,10 +1202,21 @@ fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
+        let _aux_vol= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=2", "0"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
         let _mems_mic_en= std::process::Command::new("amixer")
             .args(vec!["-c", "1", "cset", "numid=77", "on"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
+
+        let _mems_mic_vol= std::process::Command::new("amixer")
+            .args(vec!["-c", "1", "cset", "numid=2", "15"])
+            .spawn().expect("Failed to launch amixer!");
+        sleep(std::time::Duration::from_millis(50));
+
         true
     }
 }
