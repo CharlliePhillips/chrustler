@@ -356,28 +356,33 @@ fn main() {
         match keypad::get_keypad(&mut ex_gpio, last_input) {
             // ZERO - Play root note
             Some(keypad::Keypad::ZERO) => {
-                let correction = match current_octave{
-                    Octave::LOW => {
-                        (key.frequency()/2.0) / (current_freq as f64)
-                    }
-                    Octave::MID => {
-                        (key.frequency()) / (current_freq as f64)
-                    }
-                    Octave::HIGH => {
-                        (key.frequency() * 2.0) / (current_freq as f64)
-                    }
-                };
-                    let (play_snd, ctrl_snd) = sound_cache.remove((0) as usize);
-                    manager.play(Box::new(play_snd));
-                    current_notes.push(ctrl_snd);
+                if last_input != Some(keypad::Keypad::ZERO) {
+                    hold = false;
+                    gate_sound(chord_type, &mut current_notes);
+                    let correction = match current_octave{
+                        Octave::LOW => {
+                            (key.frequency()/2.0) / (current_freq as f64)
+                        }
+                        Octave::MID => {
+                            (key.frequency()) / (current_freq as f64)
+                        }
+                        Octave::HIGH => {
+                            (key.frequency() * 2.0) / (current_freq as f64)
+                        }
+                    };
+                        let (play_snd, ctrl_snd) = sound_cache.remove((0) as usize);
+                        manager.play(Box::new(play_snd));
+                        current_notes.push(ctrl_snd);
 
-                    if major {
-                        let new_snd: SoundTup =  sound.clone().with_adjustable_speed_of((MAJ_MUL[0] * correction) as f32).stoppable().controllable();
-                        sound_cache.insert(0, new_snd);
-                    } else {
-                        let new_snd =  sound.clone().with_adjustable_speed_of((MIN_MUL[0] * correction) as f32).stoppable().controllable();
-                        sound_cache.insert(0, new_snd);
-                    }
+                        if major {
+                            let new_snd: SoundTup =  sound.clone().with_adjustable_speed_of((MAJ_MUL[0] * correction) as f32).stoppable().controllable();
+                            sound_cache.insert(0, new_snd);
+                        } else {
+                            let new_snd =  sound.clone().with_adjustable_speed_of((MIN_MUL[0] * correction) as f32).stoppable().controllable();
+                            sound_cache.insert(0, new_snd);
+                        }
+                }
+                last_input = Some(keypad::Keypad::ZERO);
             },
             // ONE - I chord for major/ i chord minor
             Some(keypad::Keypad::ONE) => {
