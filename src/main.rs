@@ -1155,12 +1155,12 @@ fn fullscreen_msg(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
 fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>) -> bool {
     if int_io {
         let _hp_en= std::process::Command::new("amixer")
-            .args(vec!["-c", "1", "cset", "numid=28", "on"])
+            .args(vec!["-c", "1", "cset", "numid=7", "100"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
         let _spk_dis= std::process::Command::new("amixer")
-            .args(vec!["-c", "1", "cset", "numid=29", "off"])
+            .args(vec!["-c", "1", "cset", "numid=8", "0"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
@@ -1179,12 +1179,12 @@ fn set_io(int_io: bool, display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x
     } else {
         fullscreen_msg(display, "I/O Internal".to_string());
         let _hp_dis= std::process::Command::new("amixer")
-            .args(vec!["-c", "1", "cset", "numid=28", "off"])
+            .args(vec!["-c", "1", "cset", "numid=7", "0"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
         let _spk_en= std::process::Command::new("amixer")
-            .args(vec!["-c", "1", "cset", "numid=29", "on"])
+            .args(vec!["-c", "1", "cset", "numid=8", "88"])
             .spawn().expect("Failed to launch amixer!");
         sleep(std::time::Duration::from_millis(50));
 
