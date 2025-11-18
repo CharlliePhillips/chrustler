@@ -1,6 +1,6 @@
 use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
-use std::{env, sync::{atomic::{AtomicBool, AtomicU16}, Arc, Mutex}, thread::sleep, time::Duration};
+use std::{env, fs, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
 
 pub enum FilterType {
     HPF,
@@ -58,8 +58,8 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
     if enabled.load(std::sync::atomic::Ordering::SeqCst) {
         match sample.status {
             Vl53l1xRangeStatus::Ok => {
-                let filter_strength: i8 = if sample.distance < 300 {
-                    (sample.distance/25).try_into().unwrap()
+                let filter_strength: i8 = if sample.distance < 156 {
+                    (sample.distance/13).try_into().unwrap()
                 } else {
                     12
                 };
@@ -110,4 +110,21 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
 
     // let eq3: i8 = cur_eq3.load(std::sync::atomic::Ordering::SeqCst).try_into().unwrap(); 
     // set_eq(3, eq3);
+}
+
+pub fn calibration(tof: Vl53l1x) {
+    println!("Ensure TOF sensor is clear and press ENTER to preform SPAD calibration");
+    tof.preform_ref_spad_managment().expect("failed SPAD calibration!");
+    
+    println!("Ensure calibration card is 600mm from sensor and press ENTER to preform offset calibration");
+    tof.perform_offset_simple_calibration(600).expect("failed offset calibration!");
+    
+    println!("Ensure calibration card is 140mm from sensor and press ENTER to preform cross-talk calibration");
+    tof.perform_single_target_xtalk_calibration(140).expect("failed cross-talk calibration!");
+
+    let mut cal_data: CalibrationData = CalibrationData::new();
+    tof.get_calibration_data(&mut cal_data);
+
+    let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
+    fs::write("calibration.ron", ron_calib);
 }

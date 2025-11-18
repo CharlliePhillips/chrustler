@@ -67,7 +67,7 @@ pub fn get_keypad(ex_gpio: &mut MCP23017<I2c>, last_input: Option<Keypad>) -> Op
     let mut out = None;
     for row in 0..4 {
         let _ = ex_gpio.digital_write(row + 8, false);
-        sleep(Duration::from_micros(250));
+        //sleep(Duration::from_micros(250));
         for col in 4..8 {
             if ex_gpio.digital_read(col + 8).unwrap_or(false) {
                 //println!("row {}, col {}", row, col);

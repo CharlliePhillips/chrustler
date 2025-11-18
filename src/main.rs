@@ -5,7 +5,7 @@ use rppal::{gpio::{Event, Gpio, InputPin, Trigger}, i2c::I2c};
 use core::num;
 use std::{env, fmt::format, fs, path, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicI64, AtomicU16}}, thread::{current, sleep}, time::{Duration, Instant}};
 use std::fs::File;
-use std::io;
+use std::io::Read;
 use embedded_graphics::{
     mono_font::{MonoTextStyleBuilder, ascii::{FONT_6X10, FONT_8X13}},
     pixelcolor::BinaryColor,
@@ -184,6 +184,7 @@ fn main() {
     ).into_buffered_graphics_mode();
     display.init().unwrap();
 
+    set_io(false, &mut display);
         // init display, set message
 
         // init filters
@@ -196,6 +197,37 @@ fn main() {
     let tof_sensor: Arc<Mutex<Vl53l1x>> = Arc::new(Mutex::new(tof::init_tof()));
     let thr_sens = tof_sensor.clone();
     let main_thr_sens = tof_sensor.clone();
+    
+    let calibration_lock = main_thr_sens.lock().expect("failed to get TOF lock for calibration");
+    match File::open("calibration.ron") {
+        Ok(calibration_file) => {
+            let mut calibration_string= String::new();
+            match calibration_file.read_to_string(&mut calibration_string) {
+                Ok(_) => {}
+                Err(_) => {
+                    fullscreen_msg(&mut display, "TOF Calibration".to_string());
+                    tof::calibration(*calibration_lock);
+                }
+            }
+
+            match ron::from_str(&calibration_string) {
+                Ok(calibration_data: CalibrationData) => {
+                    calibration_lock.set_calibration_data(&mut calibration_data);
+                } 
+                Err(_) => {
+                    fullscreen_msg(&mut display, "TOF Calibration".to_string());
+                    tof::calibration(*calibration_lock);
+                }
+            }
+        }
+
+        Err(_) => {
+            fullscreen_msg(&mut display, "TOF Calibration".to_string());
+            tof::calibration(*calibration_lock);
+        }
+    }
+    drop(calibration_lock);
+    
     let cur_roi: tof::ROIRight = tof::ROIRight::new(true);
     let cur_lpf: Arc<AtomicU16> = Arc::new(AtomicU16::new(DEFAULT_EQ_LEVEL));
     let cur_hpf: Arc<AtomicU16> = Arc::new(AtomicU16::new(DEFAULT_EQ_LEVEL));
@@ -805,6 +837,8 @@ fn sample_select(sample_paths: &Vec<String>, current_smpl_idx: &mut usize, enc_p
         }
     };
 
+    fullscreen_msg(display, "Processing...".to_string());
+
     let out_sound = test_sound.clone();
 
     let mut samples: [f64; 1024] = [0.0; 1024];
@@ -911,7 +945,8 @@ fn record_sample(media_path: String, sample_paths: &mut Vec<String>, current_smp
         }
     }
 
-    sleep(Duration::from_millis(500));
+    fullscreen_msg(display, "Processing...".to_string());
+    sleep(Duration::from_millis(INPUT_TIMEOUT));
     let wav_sound = match awedio::sounds::open_file(rec_path.clone()) {
         Ok(sound) => sound,
         Err(_) => {
