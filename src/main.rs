@@ -13,7 +13,7 @@ use embedded_graphics::{
     text::{Baseline, Text},
 };
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
-use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus};
+use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus, CalibrationData, CustomerNvmManaged, AdditionalOffsetCalData, OpticalCentre, GainCalibrationData, CalPeakRateMap};
 use mcp23017::MCP23017;
 use num_traits::pow::Pow;
 
