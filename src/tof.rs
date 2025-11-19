@@ -120,13 +120,13 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.perform_ref_spad_management().expect("failed SPAD calibration!");
     
-    println!("Ensure calibration card is 600mm from sensor and press ENTER to preform offset calibration");
+    println!("Ensure calibration card is 600mm from sensor and press ENTER to preform cross-talk calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
-    tof.perform_single_target_xtalk_calibration(140).expect("failed cross-talk calibration!");
+    tof.perform_single_target_xtalk_calibration(600).expect("failed cross-talk calibration!");
     
-    println!("Ensure calibration card is 140mm from sensor and press ENTER to preform cross-talk calibration");
+    println!("Ensure calibration card is 140mm from sensor and press ENTER to preform offset calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
-    tof.perform_offset_simple_calibration(600).expect("failed offset calibration!");
+    tof.perform_offset_simple_calibration(140).expect("failed offset calibration!");
     
     let mut cal_data: CalibrationData = CalibrationData::new();
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
@@ -135,11 +135,6 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
     let data_file = File::open("calibration.ron").expect("couldn't create calibration data file!");
     let mut se = ron::Serializer::new(data_file, None).expect("failed to serialize calibration data");
     CalibrationDataRem::serialize(&cal_data, &mut se);
-
-    //let ron_calib = String::from_utf8(buf).expect("failed to serialize calibration data");
-    //let ser_cal_data: CalibrationDataRem = cal_data.into();
-    //let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
-    //fs::write("calibration.ron", ron_calib);
 }
 
 
