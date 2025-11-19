@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
 use std::{env, fs, io, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
@@ -131,4 +132,128 @@ pub fn calibration(tof: Vl53l1x) {
 
     let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
     fs::write("calibration.ron", ron_calib);
+}
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(remote = "CalibrationData")]
+#[repr(C)]
+pub struct CalibrationDataRem {
+	struct_version: u32,
+    #[serde(with = "CustomerNvmManagedRem")]
+	customer: CustomerNvmManaged,
+    #[serde(with = "AdditionalOffsetCalDataRem")]
+    add_off_cal_data: AdditionalOffsetCalData,
+    #[serde(with = "OpticalCentreRem")]
+	optical_centre: OpticalCentre,
+    #[serde(with = "GainCalibrationDataRem")]
+	gain_cal: GainCalibrationData,
+    #[serde(with = "CalPeakRateMapRem")]
+	cal_peak_rate_map: CalPeakRateMap,
+
+}
+
+impl CalibrationData {
+    pub fn new() -> Self {
+        Self {
+            struct_version: 0,
+            customer: CustomerNvmManaged {
+               global_config__spad_enables_ref_0: 0,
+               global_config__spad_enables_ref_1: 0,
+               global_config__spad_enables_ref_2: 0,
+               global_config__spad_enables_ref_3: 0,
+               global_config__spad_enables_ref_4: 0,
+               global_config__spad_enables_ref_5: 0,
+               global_config__ref_en_start_select: 0,
+               ref_spad_man__num_requested_ref_spads: 0,
+               ref_spad_man__ref_location: 0,
+               algo__crosstalk_compensation_plane_offset_kcps: 0,
+               algo__crosstalk_compensation_x_plane_gradient_kcps: 0,
+               algo__crosstalk_compensation_y_plane_gradient_kcps: 0,
+               ref_spad_char__total_rate_target_mcps: 0,
+               algo__part_to_part_range_offset_mm: 0,
+               mm_config__inner_offset_mm: 0,
+               mm_config__outer_offset_mm: 0,
+            },
+            add_off_cal_data: AdditionalOffsetCalData {
+               result__mm_inner_actual_effective_spads: 0,
+               result__mm_outer_actual_effective_spads: 0,
+               result__mm_inner_peak_signal_count_rtn_mcps: 0,
+               result__mm_outer_peak_signal_count_rtn_mcps: 0,
+            },
+            optical_centre: OpticalCentre {
+                x_centre: 0,
+                y_centre: 0,
+            },
+            gain_cal: GainCalibrationData {
+                standard_ranging_gain_factor: 0,
+            },
+            cal_peak_rate_map: CalPeakRateMap {
+               cal_distance_mm: 0,
+               max_samples: 0,
+               width: 0,
+               height: 0,
+               peak_rate_mcps: [0; VL53L1_NVM_PEAK_RATE_MAP_SAMPLES],
+            },
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(remote = "CustomerNvmManaged")]
+#[repr(C)]
+struct CustomerNvmManagedRem {
+    global_config__spad_enables_ref_0: u8,
+    global_config__spad_enables_ref_1: u8,
+    global_config__spad_enables_ref_2: u8,
+    global_config__spad_enables_ref_3: u8,
+    global_config__spad_enables_ref_4: u8,
+    global_config__spad_enables_ref_5: u8,
+    global_config__ref_en_start_select: u8,
+    ref_spad_man__num_requested_ref_spads: u8,
+    ref_spad_man__ref_location: u8,
+    algo__crosstalk_compensation_plane_offset_kcps: u32,
+    algo__crosstalk_compensation_x_plane_gradient_kcps: i16,
+    algo__crosstalk_compensation_y_plane_gradient_kcps: i16,
+    ref_spad_char__total_rate_target_mcps: u16,
+    algo__part_to_part_range_offset_mm: i16,
+    mm_config__inner_offset_mm: i16,
+    mm_config__outer_offset_mm: i16,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(remote = "AdditionalOffsetCalData")]
+#[repr(C)]
+struct AdditionalOffsetCalDataRem {
+    result__mm_inner_actual_effective_spads: u16,
+    result__mm_outer_actual_effective_spads: u16,
+    result__mm_inner_peak_signal_count_rtn_mcps: u16,
+    result__mm_outer_peak_signal_count_rtn_mcps: u16,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(remote = "OpticalCentre")]
+#[repr(C)]
+struct OpticalCentreRem {
+    x_centre: u8,
+    y_centre: u8,
+} 
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(remote = "GainCalibrationData")]
+#[repr(C)]
+struct GainCalibrationDataRem {
+	standard_ranging_gain_factor: u16,
+}
+
+
+const VL53L1_NVM_PEAK_RATE_MAP_SAMPLES: usize = 25;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(remote = "CalPeakRateMap")]
+#[repr(C)]
+struct CalPeakRateMapRem {
+    cal_distance_mm: i16,
+    max_samples: u16,
+    width: u16,
+    height: u16, 
+    peak_rate_mcps: [u16; VL53L1_NVM_PEAK_RATE_MAP_SAMPLES],
 }
