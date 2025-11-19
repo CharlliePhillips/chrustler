@@ -59,8 +59,8 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
     if enabled.load(std::sync::atomic::Ordering::SeqCst) {
         match sample.status {
             Vl53l1xRangeStatus::Ok => {
-                let filter_strength: i8 = if sample.distance < 156 {
-                    (sample.distance/13).try_into().unwrap()
+                let filter_strength: i8 = if sample.distance < 240 {
+                    (sample.distance/20).try_into().unwrap()
                 } else {
                     12
                 };
