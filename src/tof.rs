@@ -130,13 +130,13 @@ pub fn calibration(tof: Vl53l1x) {
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.get_calibration_data(&mut cal_data);
 
-    let ser_cal_data: CalibrationDataRem = cal_data.into();
-    let ron_calib = ron::to_string(&ser_cal_data).expect("failed to serialize calibration data!");
+    //let ser_cal_data: CalibrationDataRem = cal_data.into();
+    let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
     fs::write("calibration.ron", ron_calib);
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(remote = "CalibrationData")]
 #[repr(C)]
 pub struct CalibrationDataRem {
