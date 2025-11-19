@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus};
+use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus, CalibrationData, CustomerNvmManaged, AdditionalOffsetCalData, OpticalCentre, GainCalibrationData, CalPeakRateMap};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
 use std::{env, fs, io, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
 
