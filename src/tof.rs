@@ -116,7 +116,7 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
 pub fn calibration(tof: Vl53l1x) {
     println!("Ensure TOF sensor is clear and press ENTER to preform SPAD calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
-    tof.preform_ref_spad_managment().expect("failed SPAD calibration!");
+    tof.perform_ref_spad_managment().expect("failed SPAD calibration!");
     
     println!("Ensure calibration card is 600mm from sensor and press ENTER to preform offset calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
