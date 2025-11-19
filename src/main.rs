@@ -198,7 +198,7 @@ fn main() {
     let thr_sens = tof_sensor.clone();
     let main_thr_sens = tof_sensor.clone();
     
-    let calibration_lock = main_thr_sens.lock().expect("failed to get TOF lock for calibration");
+    let mut calibration_lock = main_thr_sens.lock().expect("failed to get TOF lock for calibration");
     let _ = match File::open("calibration.ron") {
         Ok(mut calibration_file) => {
             let mut calibration_string= String::new();
@@ -214,10 +214,11 @@ fn main() {
 
             let mut de = ron::Deserializer::from_str(&calibration_string).expect("failed to deserialize!");
             match CalibrationDataRem::deserialize(&mut de) {
-                Ok(calibration_data) => {
+                Ok(mut calibration_data) => {
                     // let data_wrap:  CalibrationDataRem = calibration_data;
                     // let mut calibration_data: CalibrationData = data_wrap.into();
                     calibration_lock.set_calibration_data(&mut calibration_data);
+                    drop(calibration_lock);
                 } 
                 Err(_) => {
                     drop(calibration_lock);
@@ -233,7 +234,6 @@ fn main() {
             tof::calibration(main_thr_sens.clone());
         }
     };
-    drop(calibration_lock);
     
     let cur_roi: tof::ROIRight = tof::ROIRight::new(true);
     let cur_lpf: Arc<AtomicU16> = Arc::new(AtomicU16::new(DEFAULT_EQ_LEVEL));

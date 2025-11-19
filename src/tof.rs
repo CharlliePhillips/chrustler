@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus, CalibrationData, CustomerNvmManaged, AdditionalOffsetCalData, OpticalCentre, GainCalibrationData, CalPeakRateMap};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
-use std::{env, fs, io, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
+use std::{env, fs::{self, File}, io, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
 
 pub enum FilterType {
     HPF,
@@ -133,13 +133,14 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
     tof.get_calibration_data(&mut cal_data);
 
     let mut buf = Vec::new(); 
-    let mut se = ron::Serializer::new(buf, None).expect("failed to serialize calibration data");
+    let data_file = File::open("calibration.ron").expect("couldn't create calibration data file!");
+    let mut se = ron::Serializer::new(data_file, None).expect("failed to serialize calibration data");
     CalibrationDataRem::serialize(&cal_data, &mut se);
 
-    let ron_calib = String::from_utf8(buf).expect("failed to serialize calibration data");
+    //let ron_calib = String::from_utf8(buf).expect("failed to serialize calibration data");
     //let ser_cal_data: CalibrationDataRem = cal_data.into();
     //let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
-    fs::write("calibration.ron", ron_calib);
+    //fs::write("calibration.ron", ron_calib);
 }
 
 
