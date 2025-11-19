@@ -211,7 +211,7 @@ fn main() {
             }
 
             match ron::from_str(&calibration_string) {
-                Ok(calibration_data: CalibrationData) => {
+                Ok(calibration_data) => {
                     calibration_lock.set_calibration_data(&mut calibration_data);
                 } 
                 Err(_) => {
