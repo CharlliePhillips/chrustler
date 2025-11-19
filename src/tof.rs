@@ -134,6 +134,8 @@ pub fn calibration(tof: Vl53l1x) {
     let ron_calib = ron::to_string(&ser_cal_data).expect("failed to serialize calibration data!");
     fs::write("calibration.ron", ron_calib);
 }
+
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(remote = "CalibrationData")]
 #[repr(C)]
@@ -149,7 +151,6 @@ pub struct CalibrationDataRem {
 	gain_cal: GainCalibrationData,
     #[serde(with = "CalPeakRateMapRem")]
 	cal_peak_rate_map: CalPeakRateMap,
-
 }
 
 impl Into<CalibrationData> for CalibrationDataRem {
@@ -160,7 +161,7 @@ impl Into<CalibrationData> for CalibrationDataRem {
             add_off_cal_data: self.add_off_cal_data.into(),
             optical_centre: self.optical_centre.into(),
             gain_cal: self.gain_cal.into(),
-            cal_peak_rate_map: self.gain_cal.into(),
+            cal_peak_rate_map: self.cal_peak_rate_map.into(),
         }
     }
 }
@@ -173,7 +174,7 @@ impl From<CalibrationData> for CalibrationDataRem {
             add_off_cal_data: value.add_off_cal_data.into(),
             optical_centre: value.optical_centre.into(),
             gain_cal: value.gain_cal.into(),
-            cal_peak_rate_map: value.gain_cal.into(),
+            cal_peak_rate_map: value.cal_peak_rate_map.into(),
         }
     }
 }
