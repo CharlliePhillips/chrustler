@@ -13,7 +13,7 @@ use embedded_graphics::{
     text::{Baseline, Text},
 };
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
-use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus};
+use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus, CalibrationData, CustomerNvmManaged, AdditionalOffsetCalData, OpticalCentre, GainCalibrationData, CalPeakRateMap};
 use mcp23017::MCP23017;
 use num_traits::pow::Pow;
 
@@ -23,7 +23,7 @@ use num_traits::pow::Pow;
 mod keypad;
 mod encoders;
 mod tof;
-
+use tof::CalibrationDataRem;
 
 
 
@@ -198,35 +198,42 @@ fn main() {
     let thr_sens = tof_sensor.clone();
     let main_thr_sens = tof_sensor.clone();
     
-    let calibration_lock = main_thr_sens.lock().expect("failed to get TOF lock for calibration");
-    match File::open("calibration.ron") {
-        Ok(calibration_file) => {
+    let mut calibration_lock = main_thr_sens.lock().expect("failed to get TOF lock for calibration");
+    let _ = match File::open("calibration.ron") {
+        Ok(mut calibration_file) => {
             let mut calibration_string= String::new();
             match calibration_file.read_to_string(&mut calibration_string) {
                 Ok(_) => {}
                 Err(_) => {
+                    drop(calibration_lock);
                     fullscreen_msg(&mut display, "TOF Calibration".to_string());
-                    tof::calibration(*calibration_lock);
+                    tof::calibration(main_thr_sens.clone());
+                    return
                 }
             }
 
-            match ron::from_str(&calibration_string) {
-                Ok(calibration_data: CalibrationData) => {
+            let mut de = ron::Deserializer::from_str(&calibration_string).expect("failed to deserialize!");
+            match CalibrationDataRem::deserialize(&mut de) {
+                Ok(mut calibration_data) => {
+                    // let data_wrap:  CalibrationDataRem = calibration_data;
+                    // let mut calibration_data: CalibrationData = data_wrap.into();
                     calibration_lock.set_calibration_data(&mut calibration_data);
+                    drop(calibration_lock);
                 } 
                 Err(_) => {
+                    drop(calibration_lock);
                     fullscreen_msg(&mut display, "TOF Calibration".to_string());
-                    tof::calibration(*calibration_lock);
+                    tof::calibration(main_thr_sens.clone());
                 }
             }
         }
 
         Err(_) => {
+            drop(calibration_lock);
             fullscreen_msg(&mut display, "TOF Calibration".to_string());
-            tof::calibration(*calibration_lock);
+            tof::calibration(main_thr_sens.clone());
         }
-    }
-    drop(calibration_lock);
+    };
     
     let cur_roi: tof::ROIRight = tof::ROIRight::new(true);
     let cur_lpf: Arc<AtomicU16> = Arc::new(AtomicU16::new(DEFAULT_EQ_LEVEL));
