@@ -129,8 +129,9 @@ pub fn calibration(tof: Vl53l1x) {
     let mut cal_data: CalibrationData = CalibrationData::new();
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.get_calibration_data(&mut cal_data);
-    
-    let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
+
+    let ser_cal_data: CalibrationDataRem = cal_data.into();
+    let ron_calib = ron::to_string(&ser_cal_data).expect("failed to serialize calibration data!");
     fs::write("calibration.ron", ron_calib);
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -149,6 +150,32 @@ pub struct CalibrationDataRem {
     #[serde(with = "CalPeakRateMapRem")]
 	cal_peak_rate_map: CalPeakRateMap,
 
+}
+
+impl Into<CalibrationData> for CalibrationDataRem {
+    fn into(self) -> CalibrationData {
+        CalibrationData {
+            struct_version: self.struct_version,
+            customer: self.customer.into(),
+            add_off_cal_data: self.add_off_cal_data.into(),
+            optical_centre: self.optical_centre.into(),
+            gain_cal: self.gain_cal.into(),
+            cal_peak_rate_map: self.gain_cal.into(),
+        }
+    }
+}
+
+impl From<CalibrationData> for CalibrationDataRem {
+    fn from(value: CalibrationData) -> Self {
+        Self {
+            struct_version: value.struct_version,
+            customer: value.customer.into(),
+            add_off_cal_data: value.add_off_cal_data.into(),
+            optical_centre: value.optical_centre.into(),
+            gain_cal: value.gain_cal.into(),
+            cal_peak_rate_map: value.gain_cal.into(),
+        }
+    }
 }
 
 // impl CalibrationData {
@@ -201,49 +228,143 @@ pub struct CalibrationDataRem {
 #[serde(remote = "CustomerNvmManaged")]
 #[repr(C)]
 pub struct CustomerNvmManagedRem {
-    global_config__spad_enables_ref_0: u8,
-    global_config__spad_enables_ref_1: u8,
-    global_config__spad_enables_ref_2: u8,
-    global_config__spad_enables_ref_3: u8,
-    global_config__spad_enables_ref_4: u8,
-    global_config__spad_enables_ref_5: u8,
-    global_config__ref_en_start_select: u8,
-    ref_spad_man__num_requested_ref_spads: u8,
-    ref_spad_man__ref_location: u8,
-    algo__crosstalk_compensation_plane_offset_kcps: u32,
-    algo__crosstalk_compensation_x_plane_gradient_kcps: i16,
-    algo__crosstalk_compensation_y_plane_gradient_kcps: i16,
-    ref_spad_char__total_rate_target_mcps: u16,
-    algo__part_to_part_range_offset_mm: i16,
-    mm_config__inner_offset_mm: i16,
-    mm_config__outer_offset_mm: i16,
+    pub global_config__spad_enables_ref_0: u8,
+    pub global_config__spad_enables_ref_1: u8,
+    pub global_config__spad_enables_ref_2: u8,
+    pub global_config__spad_enables_ref_3: u8,
+    pub global_config__spad_enables_ref_4: u8,
+    pub global_config__spad_enables_ref_5: u8,
+    pub global_config__ref_en_start_select: u8,
+    pub ref_spad_man__num_requested_ref_spads: u8,
+    pub ref_spad_man__ref_location: u8,
+    pub algo__crosstalk_compensation_plane_offset_kcps: u32,
+    pub algo__crosstalk_compensation_x_plane_gradient_kcps: i16,
+    pub algo__crosstalk_compensation_y_plane_gradient_kcps: i16,
+    pub ref_spad_char__total_rate_target_mcps: u16,
+    pub algo__part_to_part_range_offset_mm: i16,
+    pub mm_config__inner_offset_mm: i16,
+    pub mm_config__outer_offset_mm: i16,
+}
+impl Into<CustomerNvmManaged> for CustomerNvmManagedRem {
+    fn into(self) -> CustomerNvmManaged {
+        CustomerNvmManaged {
+            global_config__spad_enables_ref_0: self.global_config__spad_enables_ref_0,
+            global_config__spad_enables_ref_1: self.global_config__spad_enables_ref_1,
+            global_config__spad_enables_ref_2: self.global_config__spad_enables_ref_2,
+            global_config__spad_enables_ref_3: self.global_config__spad_enables_ref_3,
+            global_config__spad_enables_ref_4: self.global_config__spad_enables_ref_4,
+            global_config__spad_enables_ref_5: self.global_config__spad_enables_ref_5,
+            global_config__ref_en_start_select: self.global_config__ref_en_start_select,
+            ref_spad_man__num_requested_ref_spads: self.ref_spad_man__num_requested_ref_spads,
+            ref_spad_man__ref_location: self.ref_spad_man__ref_location,
+            algo__crosstalk_compensation_plane_offset_kcps: self.algo__crosstalk_compensation_plane_offset_kcps,
+            algo__crosstalk_compensation_x_plane_gradient_kcps: self.algo__crosstalk_compensation_x_plane_gradient_kcps,
+            algo__crosstalk_compensation_y_plane_gradient_kcps: self.algo__crosstalk_compensation_y_plane_gradient_kcps,
+            ref_spad_char__total_rate_target_mcps: self.ref_spad_char__total_rate_target_mcps,
+            algo__part_to_part_range_offset_mm: self.algo__part_to_part_range_offset_mm,
+            mm_config__inner_offset_mm: self.mm_config__inner_offset_mm,
+            mm_config__outer_offset_mm: self.mm_config__outer_offset_mm,
+        }
+    }
+}
+impl From<CustomerNvmManaged> for CustomerNvmManagedRem {
+    fn from(value: CustomerNvmManaged) -> Self {
+        Self {
+            global_config__spad_enables_ref_0: value.global_config__spad_enables_ref_0,
+            global_config__spad_enables_ref_1: value.global_config__spad_enables_ref_1,
+            global_config__spad_enables_ref_2: value.global_config__spad_enables_ref_2,
+            global_config__spad_enables_ref_3: value.global_config__spad_enables_ref_3,
+            global_config__spad_enables_ref_4: value.global_config__spad_enables_ref_4,
+            global_config__spad_enables_ref_5: value.global_config__spad_enables_ref_5,
+            global_config__ref_en_start_select: value.global_config__ref_en_start_select,
+            ref_spad_man__num_requested_ref_spads: value.ref_spad_man__num_requested_ref_spads,
+            ref_spad_man__ref_location: value.ref_spad_man__ref_location,
+            algo__crosstalk_compensation_plane_offset_kcps: value.algo__crosstalk_compensation_plane_offset_kcps,
+            algo__crosstalk_compensation_x_plane_gradient_kcps: value.algo__crosstalk_compensation_x_plane_gradient_kcps,
+            algo__crosstalk_compensation_y_plane_gradient_kcps: value.algo__crosstalk_compensation_y_plane_gradient_kcps,
+            ref_spad_char__total_rate_target_mcps: value.ref_spad_char__total_rate_target_mcps,
+            algo__part_to_part_range_offset_mm: value.algo__part_to_part_range_offset_mm,
+            mm_config__inner_offset_mm: value.mm_config__inner_offset_mm,
+            mm_config__outer_offset_mm: value.mm_config__outer_offset_mm,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(remote = "AdditionalOffsetCalData")]
 #[repr(C)]
 struct AdditionalOffsetCalDataRem {
-    result__mm_inner_actual_effective_spads: u16,
-    result__mm_outer_actual_effective_spads: u16,
-    result__mm_inner_peak_signal_count_rtn_mcps: u16,
-    result__mm_outer_peak_signal_count_rtn_mcps: u16,
+    pub result__mm_inner_actual_effective_spads: u16,
+    pub result__mm_outer_actual_effective_spads: u16,
+    pub result__mm_inner_peak_signal_count_rtn_mcps: u16,
+    pub result__mm_outer_peak_signal_count_rtn_mcps: u16,
 }
-
+impl Into<AdditionalOffsetCalData> for AdditionalOffsetCalDataRem {
+    fn into(self) -> AdditionalOffsetCalData {
+        AdditionalOffsetCalData {
+            result__mm_inner_actual_effective_spads: self.result__mm_inner_actual_effective_spads,
+            result__mm_outer_actual_effective_spads: self.result__mm_outer_actual_effective_spads,
+            result__mm_inner_peak_signal_count_rtn_mcps: self.result__mm_inner_peak_signal_count_rtn_mcps,
+            result__mm_outer_peak_signal_count_rtn_mcps: self.result__mm_outer_peak_signal_count_rtn_mcps,
+        }
+    }
+}
+impl From<AdditionalOffsetCalData> for AdditionalOffsetCalDataRem {
+    fn from(value: AdditionalOffsetCalData) -> Self {
+        Self {
+            result__mm_inner_actual_effective_spads: value.result__mm_inner_actual_effective_spads,
+            result__mm_outer_actual_effective_spads: value.result__mm_outer_actual_effective_spads,
+            result__mm_inner_peak_signal_count_rtn_mcps: value.result__mm_inner_peak_signal_count_rtn_mcps,
+            result__mm_outer_peak_signal_count_rtn_mcps: value.result__mm_outer_peak_signal_count_rtn_mcps,
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(remote = "OpticalCentre")]
 #[repr(C)]
 struct OpticalCentreRem {
-    x_centre: u8,
-    y_centre: u8,
+    pub x_centre: u8,
+    pub y_centre: u8,
+}
+impl Into<OpticalCentre> for OpticalCentreRem {
+    fn into(self) -> OpticalCentre {
+        OpticalCentre {
+            x_centre: self.x_centre,
+            y_centre: self.y_centre,
+        }
+    }
+}
+impl From<OpticalCentre> for OpticalCentreRem {
+    fn from(value: OpticalCentre) -> Self{
+        Self {
+            x_centre: value.x_centre,
+            y_centre: value.y_centre,
+        }
+    }
 } 
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(remote = "GainCalibrationData")]
 #[repr(C)]
 struct GainCalibrationDataRem {
-	standard_ranging_gain_factor: u16,
+	pub standard_ranging_gain_factor: u16,
 }
 
+impl Into<GainCalibrationData> for GainCalibrationDataRem {
+    fn into(self) -> GainCalibrationData {
+        GainCalibrationData {
+            standard_ranging_gain_factor: self.standard_ranging_gain_factor
+        }
+    }
+}
+
+impl From<GainCalibrationData> for GainCalibrationDataRem {
+    fn from(value: GainCalibrationData) -> Self {
+        Self {
+            standard_ranging_gain_factor: value.standard_ranging_gain_factor
+        }
+    }
+}
 
 const VL53L1_NVM_PEAK_RATE_MAP_SAMPLES: usize = 25;
 
@@ -251,9 +372,33 @@ const VL53L1_NVM_PEAK_RATE_MAP_SAMPLES: usize = 25;
 #[serde(remote = "CalPeakRateMap")]
 #[repr(C)]
 struct CalPeakRateMapRem {
-    cal_distance_mm: i16,
-    max_samples: u16,
-    width: u16,
-    height: u16, 
-    peak_rate_mcps: [u16; VL53L1_NVM_PEAK_RATE_MAP_SAMPLES],
+    pub cal_distance_mm: i16,
+    pub max_samples: u16,
+    pub width: u16,
+    pub height: u16, 
+    pub peak_rate_mcps: [u16; VL53L1_NVM_PEAK_RATE_MAP_SAMPLES],
+}
+
+impl Into<CalPeakRateMap> for CalPeakRateMapRem {
+    fn into(self) -> CalPeakRateMap {
+        CalPeakRateMap {
+            cal_distance_mm: self.cal_distance_mm,
+            max_samples: self.max_samples,
+            width: self.width,
+            height: self.height, 
+            peak_rate_mcps: self.peak_rate_mcps,
+        }
+    }
+}
+
+impl From<CalPeakRateMap> for CalPeakRateMapRem {
+    fn from(value: CalPeakRateMap) -> Self {
+        Self {
+            cal_distance_mm: value.cal_distance_mm,
+            max_samples: value.max_samples,
+            width: value.width,
+            height: value.height, 
+            peak_rate_mcps: value.peak_rate_mcps,
+        }
+    }
 }

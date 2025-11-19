@@ -212,7 +212,7 @@ fn main() {
             match ron::from_str(&calibration_string) {
                 Ok(calibration_data) => {
                     let data_wrap:  CalibrationDataRem = calibration_data;
-                    let mut calibration_data: CalibrationData = data_wrap;
+                    let mut calibration_data: CalibrationData = data_wrap.into();
                     calibration_lock.set_calibration_data(&mut calibration_data);
                 } 
                 Err(_) => {
