@@ -129,7 +129,7 @@ pub fn calibration(tof: Vl53l1x) {
     let mut cal_data: CalibrationData = CalibrationData::new();
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.get_calibration_data(&mut cal_data);
-
+    
     let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
     fs::write("calibration.ron", ron_calib);
 }
