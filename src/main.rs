@@ -199,16 +199,19 @@ fn main() {
     let main_thr_sens = tof_sensor.clone();
     
     let calibration_lock = main_thr_sens.lock().expect("failed to get TOF lock for calibration");
-    match File::open("calibration.ron") {
-        Ok(calibration_file) => {
+    let _ = match File::open("calibration.ron") {
+        Ok(mut calibration_file) => {
             let mut calibration_string= String::new();
             match calibration_file.read_to_string(&mut calibration_string) {
                 Ok(_) => {}
                 Err(_) => {
+                    drop(calibration_lock);
                     fullscreen_msg(&mut display, "TOF Calibration".to_string());
-                    tof::calibration(*calibration_lock);
+                    tof::calibration(main_thr_sens.clone());
+                    return
                 }
             }
+
             let mut de = ron::Deserializer::from_str(&calibration_string).expect("failed to deserialize!");
             match CalibrationDataRem::deserialize(&mut de) {
                 Ok(calibration_data) => {
@@ -217,15 +220,17 @@ fn main() {
                     calibration_lock.set_calibration_data(&mut calibration_data);
                 } 
                 Err(_) => {
+                    drop(calibration_lock);
                     fullscreen_msg(&mut display, "TOF Calibration".to_string());
-                    tof::calibration(*calibration_lock);
+                    tof::calibration(main_thr_sens.clone());
                 }
             }
         }
 
         Err(_) => {
+            drop(calibration_lock)
             fullscreen_msg(&mut display, "TOF Calibration".to_string());
-            tof::calibration(*calibration_lock);
+            tof::calibration(main_thr_sens.clone());
         }
     }
     drop(calibration_lock);

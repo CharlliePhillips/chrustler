@@ -113,7 +113,9 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
     // set_eq(3, eq3);
 }
 
-pub fn calibration(tof: Vl53l1x) {
+pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
+    let mut tof = tof_mut.lock().expect("failed to get TOF lock for calibration");
+    
     println!("Ensure TOF sensor is clear and press ENTER to preform SPAD calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.perform_ref_spad_management().expect("failed SPAD calibration!");
@@ -133,7 +135,7 @@ pub fn calibration(tof: Vl53l1x) {
     let mut buf = Vec::new(); 
     let mut se = ron::Serializer::new(buf, None).expect("failed to serialize calibration data");
     let ser_cal_data: CalibrationDataRem = cal_data.into();
-    CalibrationDataRem::serialize(ser_cal_data, &mut se);
+    CalibrationDataRem::serialize(&ser_cal_data, &mut se);
 
     let ron_calib = String::from_utf8(buf).expect("failed to serialize calibration data");
     //let ser_cal_data: CalibrationDataRem = cal_data.into();
