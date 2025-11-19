@@ -120,6 +120,8 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.perform_ref_spad_management().expect("failed SPAD calibration!");
     
+    tof.set_measurement_timing_budget(30000);
+    tof.set_inter_measurement_period(40);
     println!("Ensure calibration card is 600mm from sensor and press ENTER to preform cross-talk calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.perform_single_target_xtalk_calibration(600).expect("failed cross-talk calibration!");
