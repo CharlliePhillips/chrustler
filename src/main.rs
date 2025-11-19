@@ -212,8 +212,8 @@ fn main() {
             let mut de = ron::Deserializer::from_str(&calibration_string).expect("failed to deserialize!");
             match CalibrationDataRem::deserialize(&mut de) {
                 Ok(calibration_data) => {
-                    let data_wrap:  CalibrationDataRem = calibration_data;
-                    let mut calibration_data: CalibrationData = data_wrap.into();
+                    // let data_wrap:  CalibrationDataRem = calibration_data;
+                    // let mut calibration_data: CalibrationData = data_wrap.into();
                     calibration_lock.set_calibration_data(&mut calibration_data);
                 } 
                 Err(_) => {
