@@ -116,7 +116,7 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
 pub fn calibration(tof: Vl53l1x) {
     println!("Ensure TOF sensor is clear and press ENTER to preform SPAD calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
-    tof.perform_ref_spad_managment().expect("failed SPAD calibration!");
+    tof.perform_ref_spad_management().expect("failed SPAD calibration!");
     
     println!("Ensure calibration card is 600mm from sensor and press ENTER to preform offset calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
@@ -151,56 +151,56 @@ pub struct CalibrationDataRem {
 
 }
 
-impl CalibrationData {
-    pub fn new() -> Self {
-        Self {
-            struct_version: 0,
-            customer: CustomerNvmManaged {
-               global_config__spad_enables_ref_0: 0,
-               global_config__spad_enables_ref_1: 0,
-               global_config__spad_enables_ref_2: 0,
-               global_config__spad_enables_ref_3: 0,
-               global_config__spad_enables_ref_4: 0,
-               global_config__spad_enables_ref_5: 0,
-               global_config__ref_en_start_select: 0,
-               ref_spad_man__num_requested_ref_spads: 0,
-               ref_spad_man__ref_location: 0,
-               algo__crosstalk_compensation_plane_offset_kcps: 0,
-               algo__crosstalk_compensation_x_plane_gradient_kcps: 0,
-               algo__crosstalk_compensation_y_plane_gradient_kcps: 0,
-               ref_spad_char__total_rate_target_mcps: 0,
-               algo__part_to_part_range_offset_mm: 0,
-               mm_config__inner_offset_mm: 0,
-               mm_config__outer_offset_mm: 0,
-            },
-            add_off_cal_data: AdditionalOffsetCalData {
-               result__mm_inner_actual_effective_spads: 0,
-               result__mm_outer_actual_effective_spads: 0,
-               result__mm_inner_peak_signal_count_rtn_mcps: 0,
-               result__mm_outer_peak_signal_count_rtn_mcps: 0,
-            },
-            optical_centre: OpticalCentre {
-                x_centre: 0,
-                y_centre: 0,
-            },
-            gain_cal: GainCalibrationData {
-                standard_ranging_gain_factor: 0,
-            },
-            cal_peak_rate_map: CalPeakRateMap {
-               cal_distance_mm: 0,
-               max_samples: 0,
-               width: 0,
-               height: 0,
-               peak_rate_mcps: [0; VL53L1_NVM_PEAK_RATE_MAP_SAMPLES],
-            },
-        }
-    }
-}
+// impl CalibrationData {
+//     pub fn new() -> Self {
+//         Self {
+//             struct_version: 0,
+//             customer: CustomerNvmManaged {
+//                global_config__spad_enables_ref_0: 0,
+//                global_config__spad_enables_ref_1: 0,
+//                global_config__spad_enables_ref_2: 0,
+//                global_config__spad_enables_ref_3: 0,
+//                global_config__spad_enables_ref_4: 0,
+//                global_config__spad_enables_ref_5: 0,
+//                global_config__ref_en_start_select: 0,
+//                ref_spad_man__num_requested_ref_spads: 0,
+//                ref_spad_man__ref_location: 0,
+//                algo__crosstalk_compensation_plane_offset_kcps: 0,
+//                algo__crosstalk_compensation_x_plane_gradient_kcps: 0,
+//                algo__crosstalk_compensation_y_plane_gradient_kcps: 0,
+//                ref_spad_char__total_rate_target_mcps: 0,
+//                algo__part_to_part_range_offset_mm: 0,
+//                mm_config__inner_offset_mm: 0,
+//                mm_config__outer_offset_mm: 0,
+//             },
+//             add_off_cal_data: AdditionalOffsetCalData {
+//                result__mm_inner_actual_effective_spads: 0,
+//                result__mm_outer_actual_effective_spads: 0,
+//                result__mm_inner_peak_signal_count_rtn_mcps: 0,
+//                result__mm_outer_peak_signal_count_rtn_mcps: 0,
+//             },
+//             optical_centre: OpticalCentre {
+//                 x_centre: 0,
+//                 y_centre: 0,
+//             },
+//             gain_cal: GainCalibrationData {
+//                 standard_ranging_gain_factor: 0,
+//             },
+//             cal_peak_rate_map: CalPeakRateMap {
+//                cal_distance_mm: 0,
+//                max_samples: 0,
+//                width: 0,
+//                height: 0,
+//                peak_rate_mcps: [0; VL53L1_NVM_PEAK_RATE_MAP_SAMPLES],
+//             },
+//         }
+//     }
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(remote = "CustomerNvmManaged")]
 #[repr(C)]
-struct CustomerNvmManagedRem {
+pub struct CustomerNvmManagedRem {
     global_config__spad_enables_ref_0: u8,
     global_config__spad_enables_ref_1: u8,
     global_config__spad_enables_ref_2: u8,
