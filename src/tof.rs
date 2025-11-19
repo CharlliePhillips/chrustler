@@ -1,6 +1,6 @@
 use vl53l1x::{Vl53l1x, Vl53l1xRangeStatus};
 use rppal::{gpio::{Event, Gpio, Trigger}, i2c::I2c};
-use std::{env, fs, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
+use std::{env, fs, io, sync::{Arc, Mutex, atomic::{AtomicBool, AtomicU16}}, thread::sleep, time::Duration};
 
 pub enum FilterType {
     HPF,
@@ -114,15 +114,19 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
 
 pub fn calibration(tof: Vl53l1x) {
     println!("Ensure TOF sensor is clear and press ENTER to preform SPAD calibration");
+    io::stdin().read_line(&mut [0u8]).expect("Failed to read line"); 
     tof.preform_ref_spad_managment().expect("failed SPAD calibration!");
     
     println!("Ensure calibration card is 600mm from sensor and press ENTER to preform offset calibration");
-    tof.perform_offset_simple_calibration(600).expect("failed offset calibration!");
+    io::stdin().read_line(&mut [0u8]).expect("Failed to read line"); 
+    tof.perform_single_target_xtalk_calibration(140).expect("failed cross-talk calibration!");
     
     println!("Ensure calibration card is 140mm from sensor and press ENTER to preform cross-talk calibration");
-    tof.perform_single_target_xtalk_calibration(140).expect("failed cross-talk calibration!");
-
+    io::stdin().read_line(&mut [0u8]).expect("Failed to read line"); 
+    tof.perform_offset_simple_calibration(600).expect("failed offset calibration!");
+    
     let mut cal_data: CalibrationData = CalibrationData::new();
+    io::stdin().read_line(&mut [0u8]).expect("Failed to read line"); 
     tof.get_calibration_data(&mut cal_data);
 
     let ron_calib = ron::to_string(&cal_data).expect("failed to serialize calibration data!");
