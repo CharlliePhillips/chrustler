@@ -132,7 +132,6 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.get_calibration_data(&mut cal_data);
 
-    let mut buf = Vec::new(); 
     let data_file = File::open("calibration.ron").expect("couldn't create calibration data file!");
     let mut se = ron::Serializer::new(data_file, None).expect("failed to serialize calibration data");
     CalibrationDataRem::serialize(&cal_data, &mut se);
