@@ -134,8 +134,7 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
 
     let mut buf = Vec::new(); 
     let mut se = ron::Serializer::new(buf, None).expect("failed to serialize calibration data");
-    let ser_cal_data: CalibrationDataRem = cal_data.into();
-    CalibrationDataRem::serialize(&ser_cal_data, &mut se);
+    CalibrationDataRem::serialize(&cal_data, &mut se);
 
     let ron_calib = String::from_utf8(buf).expect("failed to serialize calibration data");
     //let ser_cal_data: CalibrationDataRem = cal_data.into();

@@ -228,11 +228,11 @@ fn main() {
         }
 
         Err(_) => {
-            drop(calibration_lock)
+            drop(calibration_lock);
             fullscreen_msg(&mut display, "TOF Calibration".to_string());
             tof::calibration(main_thr_sens.clone());
         }
-    }
+    };
     drop(calibration_lock);
     
     let cur_roi: tof::ROIRight = tof::ROIRight::new(true);
