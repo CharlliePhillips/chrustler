@@ -51,12 +51,14 @@ pub fn init_tof() -> Vl53l1x {
     return tof_sensor;
 }
 
-pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIRight, cur_hpf: Arc<AtomicU16>, cur_lpf: Arc<AtomicU16>, enabled: &Arc<AtomicBool>) {
+pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIRight, cur_hpf: Arc<AtomicU16>, cur_lpf: Arc<AtomicU16>, enabled_low: &Arc<AtomicBool>, enabled_high: &Arc<AtomicBool>) {
     //println!("TOF interrupt");
     let mut sensor = tof_sensor.lock().expect("failed to acquire sensor lock");
     let sample = sensor.read_sample().expect("failed to get right sample");
     //println!("sampled: {}mm ({:#?})", sample.distance, sample.status);
-    if enabled.load(std::sync::atomic::Ordering::SeqCst) {
+    let low_enabled = enabled_low.load(std::sync::atomic::Ordering::SeqCst);
+    let high_enabled = enabled_high.load(std::sync::atomic::Ordering::SeqCst);
+    if low_enabled ||  high_enabled{
         match sample.status {
             Vl53l1xRangeStatus::Ok => {
                 let filter_strength: i8 = if sample.distance < 240 {
@@ -66,12 +68,16 @@ pub fn tof_eq_int(_event: Event, tof_sensor: Arc<Mutex<Vl53l1x>>, cur_roi: &ROIR
                 };
                 if cur_roi.load(std::sync::atomic::Ordering::SeqCst) {
                     set_filter(FilterType::LPF, filter_strength, cur_hpf, cur_lpf);
-                    cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
-                    sensor.set_user_roi(0, 15, 3, 0).expect("failed to set ROI Left during interrupt");
+                    if low_enabled {    
+                        cur_roi.store(false, std::sync::atomic::Ordering::SeqCst);
+                        sensor.set_user_roi(0, 15, 3, 0).expect("failed to set ROI Left during interrupt");
+                    }
                 } else {
                     set_filter(FilterType::HPF, filter_strength, cur_hpf, cur_lpf);
-                    cur_roi.store(true, std::sync::atomic::Ordering::SeqCst);
-                    sensor.set_user_roi(12, 15, 15, 0).expect("failed to set ROI Right during interrupt");
+                    if high_enabled {
+                        cur_roi.store(true, std::sync::atomic::Ordering::SeqCst);
+                        sensor.set_user_roi(12, 15, 15, 0).expect("failed to set ROI Right during interrupt");
+                    }
                 }
             }
             _ => {}
@@ -86,14 +92,14 @@ fn set_filter(filter: FilterType, strength: i8, cur_hpf: Arc<AtomicU16>, cur_lpf
             if strength < 12 {
                 set_eq(2, strength/2);
             } else {
-                set_eq(2, strength);
+                set_eq(1, strength);
             }
             cur_lpf.store(strength as u16, std::sync::atomic::Ordering::SeqCst);
         },
         FilterType::HPF => {
             set_eq(4, strength);
             if strength < 12 {
-                set_eq(5, strength/2);
+                set_eq(4, strength/2);
             } else {
                 set_eq(5, strength);
             }

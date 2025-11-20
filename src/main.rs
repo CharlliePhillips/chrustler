@@ -192,8 +192,10 @@ fn main() {
     
         // init TOF sensor & interrupt
     
-    let tof_enabled:Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
-    let pass_enabled = tof_enabled.clone(); 
+    let tof_enabled_low: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
+    let tof_enabled_high: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
+    let pass_enabled_low = tof_enabled_low.clone(); 
+    let pass_enabled_high= tof_enabled_high.clone(); 
     let tof_sensor: Arc<Mutex<Vl53l1x>> = Arc::new(Mutex::new(tof::init_tof()));
     let thr_sens = tof_sensor.clone();
     let main_thr_sens = tof_sensor.clone();
@@ -595,12 +597,21 @@ fn main() {
             // C - TOF/Filter On/Off
             Some(keypad::Keypad::C) => {
                 gate_sound(chord_type, &mut current_notes);
-                if tof_enabled.load(std::sync::atomic::Ordering::SeqCst) {
-                    tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
-                    println!("TOF disabled");
+                if tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst) && tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst){
+                    tof_enabled_high.store(false, std::sync::atomic::Ordering::SeqCst);
+                    println!("TOF LF");
+                } else if tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst) {
+                    tof_enabled_low.store(false, std::sync::atomic::Ordering::SeqCst);
+                    tof_enabled_high.store(true, std::sync::atomic::Ordering::SeqCst);
+                    println!("TOF HF");
+                } else if tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst) {
+                    tof_enabled_low.store(false, std::sync::atomic::Ordering::SeqCst);
+                    tof_enabled_high.store(false, std::sync::atomic::Ordering::SeqCst);
+                    println!("TOF off");
                 } else {
-                    tof_enabled.store(true, std::sync::atomic::Ordering::SeqCst);
-                    println!("TOF enabled");
+                    tof_enabled_low.store(true, std::sync::atomic::Ordering::SeqCst);
+                    tof_enabled_high.store(true, std::sync::atomic::Ordering::SeqCst);
+                    println!("TOF on");
                 }
                 sleep(Duration::from_millis(INPUT_TIMEOUT));
                 last_input = Some(keypad::Keypad::C);
@@ -629,8 +640,10 @@ fn main() {
             // STAR - Record sample
             Some(keypad::Keypad::STAR) => {
                 gate_sound(chord_type, &mut current_notes);
-                let pre_rec_tof = tof_enabled.load(std::sync::atomic::Ordering::SeqCst);
-                tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
+                let pre_rec_tof_high = tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst);
+                let pre_rec_tof_low = tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst);
+                tof_enabled_high.store(false, std::sync::atomic::Ordering::SeqCst);
+                tof_enabled_low.store(false, std::sync::atomic::Ordering::SeqCst);
                 let mut sound_dat = None;
                 (backend, manager, sound_dat) = record_sample(media_path.clone(), &mut sample_paths, &mut current_sample_idx, &mut next_sample_no, &mut ex_gpio, backend, manager, &mut display);
                 
@@ -642,7 +655,8 @@ fn main() {
                     }
                     None => {}
                 }
-                tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
+                tof_enabled_high.store(pre_rec_tof_high, std::sync::atomic::Ordering::SeqCst);
+                tof_enabled_low.store(pre_rec_tof_low, std::sync::atomic::Ordering::SeqCst);
                 last_input = Some(keypad::Keypad::STAR);
             },
 
@@ -667,8 +681,11 @@ fn main() {
                 new_vol
             };
 
-            let pre_rec_tof = tof_enabled.load(std::sync::atomic::Ordering::SeqCst);
-            tof_enabled.store(false, std::sync::atomic::Ordering::SeqCst);
+            let pre_rec_tof_high = tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst);
+            let pre_rec_tof_low = tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst);
+            tof_enabled_high.store(false, std::sync::atomic::Ordering::SeqCst);
+            tof_enabled_low.store(false, std::sync::atomic::Ordering::SeqCst);
+
            
             let vol_string = format!("{}%", VOL_LUT[volume as usize]);
             let vol = vol_string.as_str();
@@ -676,12 +693,13 @@ fn main() {
                 .args(vec!["-q", "-c", "1", "cset", "numid=6", vol])
                 .spawn().expect("Failed to launch amixer!");
             
-            tof_enabled.store(pre_rec_tof, std::sync::atomic::Ordering::SeqCst);
+            tof_enabled_high.store(pre_rec_tof_high, std::sync::atomic::Ordering::SeqCst);
+            tof_enabled_low.store(pre_rec_tof_low, std::sync::atomic::Ordering::SeqCst);
             fullscreen_msg(&mut display, format!("Volume: {}%", (100.0 * (volume as f32 / 75.0)).round() as u16));
             sleep(Duration::from_millis(FULLSCREEN_TIMEOUT));
             last_input = Some(keypad::Keypad::VOL);
         } else {
-            update_display(&mut display, key, major, current_octave, tof_enabled.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+            update_display(&mut display, key, major, current_octave, tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst), tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
         }
         last_counter_a = cur_counter_a;
         
@@ -709,7 +727,7 @@ fn main() {
 
                 key = KEYS[key_idx as usize];
                 change_octave_key(sound.clone(), current_freq, &mut sound_cache, key, current_octave, major);
-                update_display(&mut display, key, major, current_octave, tof_enabled.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+                update_display(&mut display, key, major, current_octave, tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst), tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
                 last_input = Some(keypad::Keypad::KEY);
             }
 
@@ -1113,7 +1131,7 @@ fn change_octave_key(sound: MemorySound, freq: f64, sound_cache: &mut Vec<SoundT
 
 }
 
-fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, key: Key, major: bool, octave: Octave, tof: bool, hpf: u16, lpf: u16, chord_type: u16, gate: bool) {
+fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>, key: Key, major: bool, octave: Octave, tof_low: bool, tof_high: bool, hpf: u16, lpf: u16, chord_type: u16, gate: bool) {
     let text_style = MonoTextStyleBuilder::new()
         .font(&FONT_8X13)
         .text_color(BinaryColor::On)
