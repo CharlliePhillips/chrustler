@@ -243,7 +243,7 @@ fn main() {
     let pass_lpf = cur_lpf.clone();
     let pass_hpf = cur_hpf.clone();
     let mut tof_int_pin = gpio.get(TOF_INT_PIN).expect("failed to get tof interrupt pin").into_input();
-    tof_int_pin.set_async_interrupt(Trigger::FallingEdge, None, move |e| tof::tof_eq_int(e, thr_sens.clone(), &cur_roi, pass_hpf.clone(), pass_lpf.clone(), &pass_enabled)).expect("failed to setup TOF interrupt");
+    tof_int_pin.set_async_interrupt(Trigger::FallingEdge, None, move |e| tof::tof_eq_int(e, thr_sens.clone(), &cur_roi, pass_hpf.clone(), pass_lpf.clone(), &pass_enabled_low, &pass_enabled_high)).expect("failed to setup TOF interrupt");
     let mut sensor = main_thr_sens.lock().expect("failed to lock sensor to begin ranging");
     sensor.start_ranging(vl53l1x::DistanceMode::Short).expect("failed to begin tof ranging");
     drop(sensor);
@@ -1156,8 +1156,12 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
         _ => format!("Typ:Tri"),
     };   
 
-    let tof_text: String = if tof {
+    let tof_text: String = if tof_low && tof_high {
         format!("TOF:On")
+    } else if tof_low {
+        format!("TOF:LF")
+    } else if tof_high {
+        format!("TOF:HF")
     } else {
         format!("TOF:Off")
     };
