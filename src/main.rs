@@ -599,11 +599,11 @@ fn main() {
                 gate_sound(chord_type, &mut current_notes);
                 if tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst) && tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst){
                     tof_enabled_high.store(false, std::sync::atomic::Ordering::SeqCst);
-                    println!("TOF LF");
+                    println!("TOF HF");
                 } else if tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst) {
                     tof_enabled_low.store(false, std::sync::atomic::Ordering::SeqCst);
                     tof_enabled_high.store(true, std::sync::atomic::Ordering::SeqCst);
-                    println!("TOF HF");
+                    println!("TOF LF");
                 } else if tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst) {
                     tof_enabled_low.store(false, std::sync::atomic::Ordering::SeqCst);
                     tof_enabled_high.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -699,7 +699,7 @@ fn main() {
             sleep(Duration::from_millis(FULLSCREEN_TIMEOUT));
             last_input = Some(keypad::Keypad::VOL);
         } else {
-            update_display(&mut display, key, major, current_octave, tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst), tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
+            update_display(&mut display, key, major, current_octave, tof_enabled_low.load(std::sync::atomic::Ordering::SeqCst), tof_enabled_high.load(std::sync::atomic::Ordering::SeqCst), cur_hpf.load(std::sync::atomic::Ordering::SeqCst), cur_lpf.load(std::sync::atomic::Ordering::SeqCst), chord_type, gate);
         }
         last_counter_a = cur_counter_a;
         
@@ -1159,9 +1159,9 @@ fn update_display(display: &mut Ssd1306<I2CInterface<I2c>, DisplaySize128x64, Bu
     let tof_text: String = if tof_low && tof_high {
         format!("TOF:On")
     } else if tof_low {
-        format!("TOF:LF")
-    } else if tof_high {
         format!("TOF:HF")
+    } else if tof_high {
+        format!("TOF:LF")
     } else {
         format!("TOF:Off")
     };
