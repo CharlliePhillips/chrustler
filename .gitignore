@@ -1,1 +1,18 @@
-/target
+/target/*
+
+#Ki-Cad ignore
+*.bak
+*.bck
+*.cmp
+*.dcm
+
+*-cache.lib
+fp-info-cache
+
+*.gbr
+*.drl
+*.pos
+*.bom
+
+*.log
+*.rpt

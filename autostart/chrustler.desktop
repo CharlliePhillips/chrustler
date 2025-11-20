@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Chrustler
+Exec=bash /home/charlie/.config/autostart/chrustler_autostart.sh
