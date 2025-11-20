@@ -88,6 +88,40 @@ pub fn get_keycode(row: u8, column: u8) -> Option<Keypad> {
         0 => {
             match column {
                 4 => {
+                    out = Some(Keypad::STAR);
+                },
+                5 => {
+                    out = Some(Keypad::C);
+                },
+                6 => {
+                    out = Some(Keypad::B);
+                },
+                7 => {
+                    out = Some(Keypad::POUND);
+                },
+                _ => {}
+            }
+        }
+        1 => {
+            match column {
+                4 => {
+                    out = Some(Keypad::A);
+                },
+                5 => {
+                    out = Some(Keypad::D);
+                },
+                6 => {
+                    out = Some(Keypad::EIGHT);
+                },
+                7 => {
+                    out = Some(Keypad::NINE);
+                },
+                _ => {}
+            }
+        }
+        2 => {
+            match column {
+                4 => {
                     out = Some(Keypad::ONE);
                 },
                 5 => {
@@ -97,41 +131,7 @@ pub fn get_keycode(row: u8, column: u8) -> Option<Keypad> {
                     out = Some(Keypad::THREE);
                 },
                 7 => {
-                    out = Some(Keypad::A);
-                },
-                _ => {}
-            }
-        }
-        1 => {
-            match column {
-                4 => {
                     out = Some(Keypad::FOUR);
-                },
-                5 => {
-                    out = Some(Keypad::FIVE);
-                },
-                6 => {
-                    out = Some(Keypad::SIX);
-                },
-                7 => {
-                    out = Some(Keypad::B);
-                },
-                _ => {}
-            }
-        }
-        2 => {
-            match column {
-                4 => {
-                    out = Some(Keypad::SEVEN);
-                },
-                5 => {
-                    out = Some(Keypad::EIGHT);
-                },
-                6 => {
-                    out = Some(Keypad::NINE);
-                },
-                7 => {
-                    out = Some(Keypad::C);
                 },
                 _ => {}
             }
@@ -139,16 +139,16 @@ pub fn get_keycode(row: u8, column: u8) -> Option<Keypad> {
         3 => {
              match column {
                  4 => {
-                     out = Some(Keypad::STAR);
+                     out = Some(Keypad::FIVE);
                  },
                  5 => {
-                     out = Some(Keypad::ZERO);
+                     out = Some(Keypad::SIX);
                  },
                  6 => {
-                     out = Some(Keypad::POUND);
+                     out = Some(Keypad::SEVEN);
                  },
                  7 => {
-                     out = Some(Keypad::D);
+                     out = Some(Keypad::ZERO);
                  },
                  _ => {}
              }
