@@ -89,20 +89,20 @@
     - I had only done single-colored prints before and OpenSCAD has support for color, but it will not export those colors with STL files. In order to add color I created a small indent in the parts that the Bambu slicer would not recognize as a seperate layer, and then used the color painting/fill tool with edge detection to color the text.  
     - I also found that printing the "base" color before the text caused it to come out messy and distorted. When the text is printed before the rest of each layer though, it comes out crisp and very nice looking.  
     - Example of printing the base color before the text:  
-    ![Example photo](/img/bad_color.JPG)  
+    ![Example photo](img/bad_color.JPG)  
     - Printing the parts face down (with the text on the bottom layers) also gives the final product a clean, textured finish.
   4. Iterating on CAD designs  
     - The core part of the chassis has a lot of pretty precise measurements to hold everything in place. Instead of re-printing the entire base (10+ hours) each time I had to make an adjustment, I printed skeletons and small sections of the part to make sure everything fit.  
     - This was also useful for getting the sizing of the keycaps correct given that I'm using a non-standard plate.  
     - The following photos go left to right, top to bottom for first iterations to most recent:  
       - Main Chassis Skeleton:  
-      ![4 iterations of a skeleton for the main chassis](/img/skeletons.JPG)
+      ![4 iterations of a skeleton for the main chassis](img/skeletons.JPG)
       - IO Panel:  
-      ![2 iterations of the rear IO panel with 2xTRS jacks and one USB-C jack](/img/test_io.JPG)
+      ![2 iterations of the rear IO panel with 2xTRS jacks and one USB-C jack](img/test_io.JPG)
       - USB panel and restraint:  
-      ![3 iterations of the USB panel and internal restraint posts](/img/USB_tests.JPG)
+      ![3 iterations of the USB panel and internal restraint posts](img/USB_tests.JPG)
       - Keycaps:  
-      ![3 test keycaps of slightly different vertical sizes](/img/caps.JPG)
+      ![3 test keycaps of slightly different vertical sizes](img/caps.JPG)
   5. Linux audio  
     - I've used Linux for quite some time to do multimedia work (always requires some fidling), but I haven't had to get in the weeds quite like this before.  
     - The volume, filter and adjustments along with the IO toggle both use `amixer` commands issued by the Rust program to change the relevant settings. This was easy to test using the `alsamixer` TUI and then translate into commands using the indices given by `amixer -c -1 controls`.  
@@ -112,12 +112,12 @@
     - Picking up KiCAD to recreate the simple circuit from the membrane pad given in our class kits was fairly easy, and a lot of resources exist online from the custom keyboards community to quickly get a model running. There was also a fellow student familiar with the process who was able to give me some design tips to make sure that my first run of the board would work, and be my last.  
     - The Hive makerspace at school had excellent documentation on using their PCB fabrication equipment (LPKF ProtoMat S103, and ProtoLaser U4). From there it was fairly easy to get everything going, and once finished then I was able to solder the switches and MCP23017 using my own equipment.  
     - The underside of the keypad PCB (the top side is just plain copper):  
-    ![Copper PCB](/img/keys_underside.jpg)
+    ![Copper PCB](img/keys_underside.jpg)
   7. Acrylic Crazing and I2C Speed/Capacitance Relationship  
     - These two weren't part of skill demos for the class but my instructor Scott taught me about these when I was curious about some of these finer details.  
     - Securing acrylic with the right adhesive is important, as many adhesives will cause stress on top of that introduced by laser cutting. This additional stress can cause micro-cracks called "crazing" and is caused by adhesives with solvents like alcohol. To demo this he sprayed some dry erase fluid on an some laser cut acrylic scrap, and cracks started to form in less than a minute.  
     - I had some extra JB weld and thought that might work well so I used it on another piece of acrylic scrap and attached it to the first chassis skeleton (but it broke during stress testing):  
-    ![Close up of acrylic and PLA with JB weld globs](/img/no_craze.JPG)
+    ![Close up of acrylic and PLA with JB weld globs](img/no_craze.JPG)
     - I was worried about cramming too much near the I2C bus circuitry and causing interference. I2C operates at a constant clock but the data experiences some curve in the rise time of the signals. Scott explained how this curve is dictated by the capacitance of the wires which ensured me that I didn't have to be too careful about where to place these signal wires inside of the enclosure.  
 ## Iteration Process
 ### Initial Testing
@@ -131,7 +131,7 @@
   3. Testing Breadboard
     - For these test programs and much of the development of the main program I had all of the hardware connected to a breadboard. This made it easy to disconnect things to take measurements for the chassis while still working on the main program, and experiment minimizing the wires needed to connect everything.  
     - Having everything on the breadboard made it easy to hook up parts to the chassis skeleton(s):
-    ![breadboarded electroncs with some placed on 3D printed skeleton](/img/Breadboard.jpg)
+    ![breadboarded electroncs with some placed on 3D printed skeleton](img/Breadboard.jpg)
 ### Ideas That Didn't Work Out
   1. Battery Power  
     - I had initially planned to add battery power to the device for portability. As I worked on the physical design and test fit the rest of the hardware I realized that there would not be a whole lot of room for the battery, and given the time constraint on the project decided that it could do without and USB-C PD would suffice.  
@@ -143,7 +143,7 @@
   1. Keypad
     - As alluded to before I originally was using a 4x4 membrane keypad as the primary input for the device. This really sucked,  it was hard to tell when I was pressing the button or not, and it was very small making it a little hard to play multiple chords in succession.
     - This shows how small the original pad was compared to the one I made:  
-    ![final product next to small membrane keypad](/img/bad_pad.JPG)
+    ![final product next to small membrane keypad](img/bad_pad.JPG)
     - Creating my own keypad fixed these problems, and also let me change the legends on the keys for a more intuitive arrangement of the inputs.  
   2. SD Card – OTG adapter
     - My original idea for loading external sound files was to use an SD card like on devices like the SP404 MKII and modern (or modernized) MPC devices. This is sort of what the format is intended for, but requires an SPI connection from the limited GPIO I had after adding the sound card.  
@@ -171,10 +171,10 @@
 
 ## The Final Prototype
 A photo taken during assembly:
-![assembly photo](/img/assemnbly.jpg)
+![assembly photo](img/assemnbly.jpg)
 Overview of the final prototype:
-![overview photo](/img/overview.JPG)
+![overview photo](img/overview.JPG)
 Main IO panel on the final prototype:
-![IO Panel](/img/io_panel.JPG)
+![IO Panel](img/io_panel.JPG)
 USB Panel on the prototype:
-![USB Panel](/img/USB_panel.JPG) 
+![USB Panel](img/USB_panel.JPG) 
