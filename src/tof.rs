@@ -119,16 +119,17 @@ pub fn calibration(tof_mut: Arc<Mutex<Vl53l1x>>) {
     
     tof.set_measurement_timing_budget(30000);
     tof.set_inter_measurement_period(40);
-    println!("Ensure calibration card is 600mm from sensor and press ENTER to preform cross-talk calibration");
-    io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
-    tof.perform_single_target_xtalk_calibration(600).expect("failed cross-talk calibration!");
-
-    tof.set_measurement_timing_budget(30000);
-    tof.set_inter_measurement_period(40);
     println!("Ensure calibration card is 140mm from sensor and press ENTER to preform offset calibration");
     io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
     tof.perform_offset_simple_calibration(140).expect("failed offset calibration!");
     println!("finished offset calibration");
+    
+    tof.set_measurement_timing_budget(30000);
+    tof.set_inter_measurement_period(40);
+    println!("Ensure calibration card is 600mm from sensor and press ENTER to preform cross-talk calibration");
+    io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
+    tof.perform_single_target_xtalk_calibration(600).expect("failed cross-talk calibration!");
+   println!("finished xtalk calibration");
 
     let mut cal_data: CalibrationData = CalibrationData::new();
     //io::stdin().read_line(&mut "".to_string()).expect("Failed to read line"); 
