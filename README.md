@@ -98,6 +98,7 @@
     - The following photos go left to right, top to bottom for first iterations to most recent:  
       - Main Chassis Skeleton:  
       <img src="img/skeletons.JPG" alt="4 iterations of a skeleton for the main chassis"  width="400">
+      
       - IO Panel:  
       <img src="img/test_io.JPG" alt="2 iterations of the rear IO panel with 2xTRS jacks and one USB-C jack"  width="400">  
 
