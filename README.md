@@ -1,5 +1,5 @@
 # The Chrustler
-  Chrustler is a combination of the words 'chord' (what the instrument plays) 'Rust' (the language the software is written in) and 'sampler' (the family of instruments it belongs to). This instrument takes in samples recorded using the device or loaded from a USB drive and detects their frequency. Then the user can play that sample as chords in one of the western music scales. The device runs Raspbian Linux and the Rust program in this repo is started automatically by placing the [autostart folder](https://github.com/CharlliePhillips/chrustler/tree/main/autostart) in `~/.config`. This is my final project for CS3651 (Prototyping Intelligent Devices) at Georgia Tech.  [A video demonstration is available on Youtube.]()
+  Chrustler is a combination of the words 'chord' (what the instrument plays) 'Rust' (the language the software is written in) and 'sampler' (the family of instruments it belongs to). This instrument takes in samples recorded using the device or loaded from a USB drive and detects their frequency. Then the user can play that sample as chords in one of the western music scales. The device runs Raspbian Linux and the Rust program in this repo is started automatically by placing the [autostart folder](https://github.com/CharlliePhillips/chrustler/tree/main/autostart) in `~/.config`. This is my final project for CS3651 (Prototyping Intelligent Devices) at Georgia Tech.  [A video demonstration is available on Youtube.](https://youtu.be/KlqjkN_t0CQ)
 
 ## Hardware
   1. Brains: Raspbery Pi Zero 2 W  
@@ -103,6 +103,7 @@
 
       - USB panel and restraint:  
       <img src="img/USB_tests.JPG" alt="3 iterations of the USB panel and internal restraint posts"  width="400">  
+
       - Keycaps:  
       <img src="img/caps.JPG" alt="3 test keycaps of slightly different vertical sizes"  width="400">  
  
